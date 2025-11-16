@@ -1,0 +1,53 @@
+name: 자동 데이터 수집
+
+on:
+  schedule:
+    # 매일 오전 9시 (UTC 00:00 = 한국시간 09:00)
+    - cron: '0 0 * * *'
+  
+  # 수동 실행도 가능
+  workflow_dispatch:
+
+jobs:
+  collect-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 코드 체크아웃
+      uses: actions/checkout@v3
+    
+    - name: Python 설정
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Chrome 설치
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y chromium-browser chromium-chromedriver
+    
+    - name: 의존성 설치
+      run: |
+        pip install selenium requests beautifulsoup4
+    
+    - name: 데이터 수집 실행 (Selenium)
+      run: |
+        python auto_collector_selenium.py
+    
+    - name: 수집된 데이터 확인
+      run: |
+        ls -la collected_data/
+        cat collected_data/*.json || echo "데이터 없음"
+    
+    - name: 수집된 데이터 커밋
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add collected_data/
+        git diff --quiet && git diff --staged --quiet || git commit -m "chore: 데이터 자동 수집 $(date +%Y-%m-%d)"
+    
+    - name: 변경사항 Push
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
