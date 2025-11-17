@@ -2,8 +2,8 @@ name: 자동 데이터 수집
 
 on:
   schedule:
-    # 매일 오전 9시 (UTC 00:00 = 한국시간 09:00)
-    - cron: '0 0 * * *'
+    # 매시간 실행 (00분마다)
+    - cron: '0 * * * *'
   
   # 수동 실행도 가능
   workflow_dispatch:
