@@ -66,7 +66,11 @@ class SoomgoSeleniumCollector:
                 # "리뷰 205개" 같은 텍스트 찾기
                 review_element = driver.find_element(By.XPATH, "//*[contains(text(), '리뷰')]")
                 review_text = review_element.text
-                reviews = int(''.join(filter(str.isdigit, review_text)))
+                # 숫자만 추출하되, 가장 큰 숫자 선택 (리뷰 개수가 클 것)
+                import re
+                numbers = re.findall(r'\d+', review_text)
+                if numbers:
+                    reviews = max([int(n) for n in numbers])
             except:
                 reviews = 0
             
@@ -79,7 +83,8 @@ class SoomgoSeleniumCollector:
                 if hiring_match:
                     hirings = int(hiring_match.group(1))
                 
-                review_match = re.search(r'리뷰[^\d]*(\d+)', page_text)
+                # 리뷰는 더 큰 숫자 찾기 (100 이상)
+                review_match = re.search(r'리뷰[^\d]*(\d{2,3})', page_text)
                 if review_match:
                     reviews = int(review_match.group(1))
             
