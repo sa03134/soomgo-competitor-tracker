@@ -1,5 +1,5 @@
 """
-숨고 경쟁사 분석 - HTML 구조 기반 수정
+숨고 경쟁사 분석 - 정규식 전용
 """
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -42,82 +42,56 @@ class SoomgoSeleniumCollector:
         return driver
     
     def extract_data_from_page(self, driver):
-        time.sleep(5)
+        time.sleep(8)
         
         hirings = 0
         reviews = 0
         rating = 0.0
         
         try:
-            # 통계 영역 찾기
-            stats_info = driver.find_element(By.CSS_SELECTOR, "div.statistics-info")
+            page_text = driver.find_element(By.TAG_NAME, 'body').text
             
-            # 모든 statistics-info-item 찾기
-            items = stats_info.find_elements(By.CSS_SELECTOR, "div.statistics-info-item")
+            # 고용수
+            hiring_patterns = [
+                r'(\d{1,4})\s*회',
+                r'고용\s*(\d{1,4})',
+            ]
             
-            print(f"  찾은 항목 수: {len(items)}")
+            for pattern in hiring_patterns:
+                match = re.search(pattern, page_text)
+                if match:
+                    hirings = int(match.group(1))
+                    print(f"  ✅ 고용: {hirings}")
+                    break
             
-            for idx, item in enumerate(items):
-                text = item.text.strip()
-                print(f"  항목 {idx}: {text[:50]}")
-                
-                # 첫 번째 항목 = 고용수
-                if idx == 0:
-                    numbers = re.findall(r'\d+', text.replace(',', ''))
-                    if numbers:
-                        hirings = int(numbers[0])
-                        print(f"  ✅ 고용수: {hirings}")
-                
-                # review-info 클래스 있는 항목 = 리뷰
-                if 'review-info' in item.get_attribute('class'):
-                    # 평점 찾기
-                    try:
-                        rate_el = item.find_element(By.CSS_SELECTOR, "span.rate")
-                        rating = float(rate_el.text.strip())
-                        print(f"  ✅ 평점: {rating}")
-                    except:
-                        pass
-                    
-                    # 리뷰수 찾기
-                    try:
-                        count_el = item.find_element(By.CSS_SELECTOR, "span.count")
-                        count_text = count_el.text.strip().replace('(', '').replace(')', '')
-                        reviews = int(count_text)
-                        print(f"  ✅ 리뷰수: {reviews}")
-                    except:
-                        pass
+            # 리뷰수
+            review_patterns = [
+                r'\((\d{1,4})\)',
+                r'리뷰\s*(\d{1,4})',
+            ]
+            
+            for pattern in review_patterns:
+                matches = re.findall(pattern, page_text)
+                if matches:
+                    reviews = max([int(m) for m in matches])
+                    print(f"  ✅ 리뷰: {reviews}")
+                    break
+            
+            # 평점
+            rating_patterns = [
+                r'(\d\.\d)',
+                r'평점\s*(\d\.\d)',
+            ]
+            
+            for pattern in rating_patterns:
+                match = re.search(pattern, page_text)
+                if match:
+                    rating = float(match.group(1))
+                    print(f"  ✅ 평점: {rating}")
+                    break
             
         except Exception as e:
-            print(f"  ❌ 선택자 오류: {e}")
-        
-        # 최후의 수단: 정규식
-        if hirings == 0 or reviews == 0:
-            print(f"  백업: 정규식 사용")
-            try:
-                page_text = driver.find_element(By.TAG_NAME, 'body').text
-                
-                if hirings == 0:
-                    # "525회" 또는 "고용 525"
-                    hiring_match = re.search(r'(\d+)회|고용\D*(\d+)', page_text)
-                    if hiring_match:
-                        hirings = int(hiring_match.group(1) or hiring_match.group(2))
-                        print(f"  ✅ 고용수 (정규식): {hirings}")
-                
-                if reviews == 0:
-                    # "(207)"
-                    review_match = re.search(r'\((\d+)\)', page_text)
-                    if review_match:
-                        reviews = int(review_match.group(1))
-                        print(f"  ✅ 리뷰수 (정규식): {reviews}")
-                
-                if rating == 0:
-                    # "5.0"
-                    rating_match = re.search(r'(\d\.\d)', page_text)
-                    if rating_match:
-                        rating = float(rating_match.group(1))
-                        print(f"  ✅ 평점 (정규식): {rating}")
-            except:
-                pass
+            print(f"  ❌ 오류: {e}")
         
         return hirings, reviews, rating
     
@@ -147,7 +121,7 @@ class SoomgoSeleniumCollector:
                 'date': datetime.now().strftime('%Y-%m-%d')
             }
         except Exception as e:
-            print(f"  ❌ 오류: {e}")
+            print(f"  ❌ 수집 실패: {e}")
             return None
     
     def save_data(self, competitor_id, data):
@@ -176,7 +150,7 @@ class SoomgoSeleniumCollector:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(storage_data, f, ensure_ascii=False, indent=2)
         
-        print(f"💾 {competitor_id} 저장")
+        print(f"💾 저장 완료")
     
     def collect_all(self):
         print(f"🔍 수집 시작")
@@ -187,7 +161,7 @@ class SoomgoSeleniumCollector:
                 data = self.collect_competitor_data(driver, competitor_id)
                 if data:
                     self.save_data(competitor_id, data)
-                time.sleep(1)
+                time.sleep(2)
             print(f"✅ 완료")
         finally:
             driver.quit()
