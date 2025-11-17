@@ -63,56 +63,74 @@ class SoomgoSeleniumCollector:
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
-            time.sleep(3)  # JavaScript 렌더링 대기
+            time.sleep(5)  # JavaScript 렌더링 충분히 대기
             
             hirings = 0
             reviews = 0
             
-            # 방법 1: CSS Selector로 정확한 위치에서 가져오기
-            try:
-                # 고용 수 - 첫 번째 statistics-info-item-contents
-                hiring_element = driver.find_element(
-                    By.CSS_SELECTOR, 
-                    'div.statistics-info > div:nth-child(1) > div.statistics-info-item-contents'
-                )
-                hiring_text = hiring_element.text
-                # "1,009회" -> 1009
-                hirings = int(hiring_text.replace('회', '').replace(',', '').strip())
-                print(f"  📊 고용 추출: {hiring_text} → {hirings}")
-            except Exception as e:
-                print(f"  ⚠️  고용 추출 실패 (방법 1): {e}")
+            # 전체 페이지 텍스트 가져오기
+            page_text = driver.find_element(By.TAG_NAME, 'body').text
+            print(f"  📄 페이지 텍스트 일부: {page_text[:200]}...")
             
-            try:
-                # 리뷰 수 - review-info의 span.count
-                review_element = driver.find_element(
-                    By.CSS_SELECTOR,
-                    'div.statistics-info-item.review-info > div.statistics-info-item-contents > span.count'
-                )
-                review_text = review_element.text
-                # "5.0 (571)" -> 571
-                reviews = int(review_text.replace('(', '').replace(')', '').replace(',', '').strip())
-                print(f"  ⭐ 리뷰 추출: {review_text} → {reviews}")
-            except Exception as e:
-                print(f"  ⚠️  리뷰 추출 실패 (방법 1): {e}")
+            # 방법 1: 정규식 - "고용\n1,009회" 패턴
+            hiring_patterns = [
+                r'고용\s*[\n\r\s]*([0-9,]+)\s*회',  # "고용\n1,009회"
+                r'고용.*?([0-9,]+)회',               # "고용 1,009회"
+                r'([0-9,]+)\s*회.*?고용',            # "1,009회 고용"
+            ]
             
-            # 방법 2: Fallback - 전체 텍스트에서 정규식으로 찾기
-            if hirings == 0 or reviews == 0:
-                print(f"  🔄 대체 방법으로 재시도...")
-                page_text = driver.find_element(By.TAG_NAME, 'body').text
-                
-                if hirings == 0:
-                    # "고용\n1,009회" 패턴
-                    hiring_match = re.search(r'고용\s*[\n\s]*([0-9,]+)\s*회', page_text)
-                    if hiring_match:
-                        hirings = int(hiring_match.group(1).replace(',', ''))
-                        print(f"  📊 고용 추출 (방법 2): {hirings}")
-                
-                if reviews == 0:
-                    # "5.0 (571)" 패턴
-                    review_match = re.search(r'5\.0\s*\(([0-9,]+)\)', page_text)
-                    if review_match:
-                        reviews = int(review_match.group(1).replace(',', ''))
-                        print(f"  ⭐ 리뷰 추출 (방법 2): {reviews}")
+            for pattern in hiring_patterns:
+                match = re.search(pattern, page_text, re.DOTALL)
+                if match:
+                    hirings = int(match.group(1).replace(',', ''))
+                    print(f"  📊 고용 추출 성공: {hirings} (패턴: {pattern[:20]}...)")
+                    break
+            
+            # 방법 2: 정규식 - 리뷰 "(571)" 패턴
+            review_patterns = [
+                r'\(([0-9,]+)\)',                    # "(571)"
+                r'리뷰.*?\(([0-9,]+)\)',             # "리뷰....(571)"
+                r'5\.0\s*\(([0-9,]+)\)',             # "5.0 (571)"
+            ]
+            
+            for pattern in review_patterns:
+                matches = re.findall(pattern, page_text)
+                if matches:
+                    # 숫자 중 가장 큰 값 선택 (보통 리뷰 수가 가장 큼)
+                    reviews = max([int(m.replace(',', '')) for m in matches])
+                    print(f"  ⭐ 리뷰 추출 성공: {reviews}")
+                    break
+            
+            # 방법 3: XPath로 모든 텍스트 요소 검색
+            if hirings == 0:
+                try:
+                    elements = driver.find_elements(By.XPATH, "//*[contains(text(), '고용') or contains(text(), '회')]")
+                    for elem in elements:
+                        text = elem.text
+                        match = re.search(r'([0-9,]+)\s*회', text)
+                        if match:
+                            potential = int(match.group(1).replace(',', ''))
+                            if potential > hirings:  # 가장 큰 값 선택
+                                hirings = potential
+                                print(f"  📊 고용 추출 (XPath): {hirings}")
+                except Exception as e:
+                    print(f"  ⚠️  XPath 고용 추출 실패: {e}")
+            
+            if reviews == 0:
+                try:
+                    # 리뷰는 괄호 안의 숫자
+                    elements = driver.find_elements(By.XPATH, "//*[contains(text(), '(') and contains(text(), ')')]")
+                    for elem in elements:
+                        text = elem.text
+                        matches = re.findall(r'\(([0-9,]+)\)', text)
+                        if matches:
+                            for m in matches:
+                                potential = int(m.replace(',', ''))
+                                if potential > reviews:
+                                    reviews = potential
+                                    print(f"  ⭐ 리뷰 추출 (XPath): {reviews}")
+                except Exception as e:
+                    print(f"  ⚠️  XPath 리뷰 추출 실패: {e}")
             
             print(f"  ✅ 최종 결과: 고용 {hirings}, 리뷰 {reviews}")
             return hirings, reviews
