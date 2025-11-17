@@ -28,7 +28,7 @@ jobs:
     
     - name: 의존성 설치
       run: |
-        pip install selenium requests beautifulsoup4
+        pip install selenium webdriver-manager requests beautifulsoup4
     
     - name: 데이터 수집 실행 (Selenium)
       run: |
