@@ -59,24 +59,6 @@ function setupEvents() {
     panel.classList.toggle('hidden');
   });
 
-  // GitHub 동기화 버튼
-  document.getElementById('syncGithubBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('syncGithubBtn');
-    btn.classList.add('loading');
-    btn.disabled = true;
-    
-    try {
-      await syncFromGithub();
-      showToast('✅ GitHub에서 데이터를 가져왔습니다!');
-      loadData(); // 화면 새로고침
-    } catch (error) {
-      showToast('❌ 동기화 실패: ' + error.message);
-    } finally {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-  });
-
   // 설정 저장
   document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
     const settings = {
@@ -163,6 +145,12 @@ function updateMonthDisplay() {
 
 // 빠른 통계 업데이트
 async function updateQuickStats() {
+  const urls = {
+    'soncoach': 'https://soomgo.com/profile/users/16756708',
+    'seoulcoach': 'https://soomgo.com/profile/users/3379598',
+    'passcoach': 'https://soomgo.com/profile/users/11571181'
+  };
+  
   for (const comp of competitors) {
     const result = await chrome.storage.local.get([comp.id]);
     const data = result[comp.id] || {};
@@ -174,7 +162,20 @@ async function updateQuickStats() {
     const qsId = comp.id === 'soncoach' ? 'qs-son' : 
                  comp.id === 'seoulcoach' ? 'qs-seoul' : 'qs-pass';
     
-    document.getElementById(qsId).textContent = `${comp.name} ${latest.hirings}/${latest.reviews}`;
+    const qsEl = document.getElementById(qsId);
+    qsEl.textContent = `${comp.name} ${latest.hirings}/${latest.reviews}`;
+    
+    // 클릭 시 프로필 페이지 열기
+    qsEl.style.cursor = 'pointer';
+    qsEl.onclick = () => {
+      chrome.tabs.create({ url: urls[comp.id] });
+    };
+    
+    // 평점 경고 (5.0 미만)
+    if (latest.rating && latest.rating < 5.0) {
+      qsEl.style.color = '#dc2626';
+      qsEl.title = `⚠️ 평점 ${latest.rating}`;
+    }
     
     // 오늘 증감
     if (dates.length >= 2) {
@@ -500,11 +501,30 @@ async function renderCalendar(compId) {
       }
     }
     
-    // 날짜 클릭 이벤트
-    dayEl.style.cursor = todayData ? 'pointer' : 'default';
+    // 마우스 호버 시 툴팁 표시
     if (todayData) {
-      dayEl.addEventListener('click', () => {
-        showDateDetail(compId, dateStr, todayData, data);
+      dayEl.style.cursor = 'default';
+      
+      let hoverTimeout = null;
+      
+      dayEl.addEventListener('mouseenter', (e) => {
+        // 이전 타이머 취소
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+        }
+        
+        // 100ms 후에 툴팁 표시 (debounce)
+        hoverTimeout = setTimeout(() => {
+          showTooltip(e.currentTarget, compId, dateStr, todayData, data);
+        }, 100);
+      });
+      
+      dayEl.addEventListener('mouseleave', () => {
+        // 타이머 취소
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+        }
+        hideTooltip();
       });
     }
     
@@ -530,6 +550,118 @@ function showToast(message) {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
   }, 2000);
+}
+
+// 툴팁 표시 (마우스 호버)
+let currentTooltip = null;
+
+function showTooltip(element, compId, dateStr, dayData, allData) {
+  // 기존 툴팁 즉시 제거
+  if (currentTooltip) {
+    currentTooltip.remove();
+    currentTooltip = null;
+  }
+  
+  // 경쟁사 이름
+  const compName = compId === 'soncoach' ? '손코치' : 
+                   compId === 'seoulcoach' ? '정코치' : '패스';
+  
+  // 이전 날짜 데이터
+  const dates = Object.keys(allData).sort();
+  const idx = dates.indexOf(dateStr);
+  const prevData = idx > 0 ? allData[dates[idx - 1]] : null;
+  
+  const hChange = prevData ? dayData.hirings - prevData.hirings : 0;
+  const rChange = prevData ? dayData.reviews - prevData.reviews : 0;
+  
+  // 날짜 포맷
+  const date = new Date(dateStr);
+  const dateText = `${date.getMonth() + 1}/${date.getDate()}`;
+  
+  // 툴팁 생성
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tooltip';
+  
+  // 시간대별 데이터가 있으면 표시
+  let hourlyHtml = '';
+  if (dayData.hourly) {
+    const times = Object.keys(dayData.hourly).sort();
+    hourlyHtml = '<div class="tooltip-hourly">';
+    times.forEach((time, i) => {
+      const data = dayData.hourly[time];
+      const prevHourly = i > 0 ? dayData.hourly[times[i - 1]] : null;
+      const hDiff = prevHourly ? data.hirings - prevHourly.hirings : 0;
+      const rDiff = prevHourly ? data.reviews - prevHourly.reviews : 0;
+      
+      hourlyHtml += `
+        <div class="hourly-item">
+          <span class="hourly-time">${time}</span>
+          <span class="hourly-values">${data.hirings}/${data.reviews}</span>
+          ${(hDiff !== 0 || rDiff !== 0) ? `<span class="hourly-diff">(${hDiff > 0 ? '+' : ''}${hDiff}/${rDiff > 0 ? '+' : ''}${rDiff})</span>` : ''}
+        </div>
+      `;
+    });
+    hourlyHtml += '</div>';
+  }
+  
+  tooltip.innerHTML = `
+    <div class="tooltip-header">${compName} - ${dateText}</div>
+    <div class="tooltip-body">
+      <div class="tooltip-row">
+        <span class="tooltip-label">고용:</span>
+        <span class="tooltip-value">${dayData.hirings}</span>
+        ${hChange !== 0 ? `<span class="tooltip-change ${hChange > 0 ? 'positive' : 'negative'}">${hChange > 0 ? '+' : ''}${hChange}</span>` : ''}
+      </div>
+      <div class="tooltip-row">
+        <span class="tooltip-label">리뷰:</span>
+        <span class="tooltip-value">${dayData.reviews}</span>
+        ${rChange !== 0 ? `<span class="tooltip-change ${rChange > 0 ? 'positive' : 'negative'}">${rChange > 0 ? '+' : ''}${rChange}</span>` : ''}
+      </div>
+    </div>
+    ${hourlyHtml}
+  `;
+  
+  document.body.appendChild(tooltip);
+  currentTooltip = tooltip;
+  
+  // 위치 계산
+  const rect = element.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  
+  // 기본: 요소 위에 표시
+  let top = rect.top - tooltipRect.height - 8;
+  let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+  
+  // 화면 밖으로 나가면 아래에 표시
+  if (top < 0) {
+    top = rect.bottom + 8;
+  }
+  
+  // 좌우 경계 체크
+  if (left < 8) {
+    left = 8;
+  } else if (left + tooltipRect.width > window.innerWidth - 8) {
+    left = window.innerWidth - tooltipRect.width - 8;
+  }
+  
+  tooltip.style.top = `${top}px`;
+  tooltip.style.left = `${left}px`;
+  
+  // 애니메이션
+  setTimeout(() => tooltip.classList.add('show'), 10);
+}
+
+// 툴팁 숨기기
+function hideTooltip() {
+  if (currentTooltip) {
+    currentTooltip.classList.remove('show');
+    setTimeout(() => {
+      if (currentTooltip) {
+        currentTooltip.remove();
+        currentTooltip = null;
+      }
+    }, 200);
+  }
 }
 
 // 날짜 상세 모달 표시

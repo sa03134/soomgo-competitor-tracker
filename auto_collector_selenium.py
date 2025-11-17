@@ -49,83 +49,85 @@ class SoomgoSeleniumCollector:
         return driver
     
     def extract_data_from_page(self, driver):
-        """다중 선택자로 데이터 추출"""
+        """정확한 CSS 선택자로 데이터 추출"""
         try:
-            # 페이지 로딩 대기
-            time.sleep(3)
+            # 페이지 로딩 대기 (더 길게)
+            time.sleep(5)
             
             hirings = 0
             reviews = 0
+            rating = 0.0
             
-            # 고용수 추출 - 다중 CSS 선택자
+            # 고용수 추출 - 정확한 선택자
             hiring_selectors = [
-                "div.statistics-info > div:first-child div.statistics-info-item-contents",
-                "div.statistics-info-item-contents",
-                "[class*='statistics'] [class*='contents']"
+                "#app-body > div > div.container > div.row.no-gutters > div.profile-section.col-lg-auto.col-12 > div > div.profile-overview > div.info > div.detail-info > div.statistics-info > div:nth-child(1) > div.statistics-info-item-contents",
+                "div.statistics-info > div:nth-child(1) > div.statistics-info-item-contents",
+                "div.statistics-info div.statistics-info-item-contents"
             ]
             
             for selector in hiring_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  📍 고용 선택자 '{selector}': {len(elements)}개 발견")
+                    print(f"  📍 고용 선택자: {len(elements)}개 발견")
                     
                     if elements:
                         text = elements[0].text.replace(',', '').strip()
                         numbers = re.findall(r'\d+', text)
                         if numbers:
                             hirings = int(numbers[0])
-                            print(f"  ✅ 고용수: {hirings} (선택자 성공)")
+                            print(f"  ✅ 고용수: {hirings}")
                             break
                 except Exception as e:
                     continue
             
-            # 리뷰수 추출 - 다중 CSS 선택자
+            # 리뷰수 추출 - 정확한 선택자
             review_selectors = [
-                "div.review-info span.count",
-                "span.count",
-                "[class*='review'] [class*='count']"
+                "#app-body > div > div.container > div.row.no-gutters > div.profile-section.col-lg-auto.col-12 > div > div.profile-overview > div.info > div.detail-info > div.statistics-info > div.statistics-info-item.review-info > div.statistics-info-item-contents > span.count",
+                "div.statistics-info-item.review-info span.count",
+                "div.review-info span.count"
             ]
             
             for selector in review_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  📍 리뷰 선택자 '{selector}': {len(elements)}개 발견")
+                    print(f"  📍 리뷰 선택자: {len(elements)}개 발견")
                     
                     if elements:
                         text = elements[0].text.replace(',', '').strip()
                         numbers = re.findall(r'\d+', text)
                         if numbers:
-                            # 가장 큰 숫자 선택
                             reviews = max([int(n) for n in numbers])
-                            print(f"  ✅ 리뷰수: {reviews} (선택자 성공)")
+                            print(f"  ✅ 리뷰수: {reviews}")
                             break
                 except Exception as e:
                     continue
             
-            # 백업: XPath + 정규식
-            if hirings == 0:
-                try:
-                    hiring_element = driver.find_element(By.XPATH, "//*[contains(text(), '고용')]")
-                    hiring_text = hiring_element.text
-                    hirings = int(''.join(filter(str.isdigit, hiring_text)))
-                    print(f"  ✅ 고용수: {hirings} (XPath)")
-                except:
-                    pass
+            # 평점 추출
+            rating_selectors = [
+                "#app-body > div > div.container > div.row.no-gutters > div.profile-section.col-lg-auto.col-12 > div > div.profile-overview > div.info > div.detail-info > div.statistics-info > div.statistics-info-item.review-info > div.statistics-info-item-contents > span.rate",
+                "div.statistics-info-item.review-info span.rate",
+                "span.rate"
+            ]
             
-            if reviews == 0:
+            for selector in rating_selectors:
                 try:
-                    review_element = driver.find_element(By.XPATH, "//*[contains(text(), '리뷰')]")
-                    review_text = review_element.text
-                    numbers = re.findall(r'\d+', review_text)
-                    if numbers:
-                        reviews = max([int(n) for n in numbers])
-                        print(f"  ✅ 리뷰수: {reviews} (XPath)")
-                except:
-                    pass
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    print(f"  📍 평점 선택자: {len(elements)}개 발견")
+                    
+                    if elements:
+                        text = elements[0].text.strip()
+                        # "5.0" 같은 형태
+                        rating_match = re.search(r'(\d+\.?\d*)', text)
+                        if rating_match:
+                            rating = float(rating_match.group(1))
+                            print(f"  ✅ 평점: {rating}")
+                            break
+                except Exception as e:
+                    continue
             
-            # 최후: 페이지 전체 텍스트
+            # 백업: 정규식
             if hirings == 0 or reviews == 0:
-                print(f"  🔍 페이지 전체 검색 시작...")
+                print(f"  🔍 백업: 정규식 검색")
                 page_text = driver.find_element(By.TAG_NAME, 'body').text
                 
                 if hirings == 0:
@@ -140,11 +142,11 @@ class SoomgoSeleniumCollector:
                         reviews = int(review_match.group(1))
                         print(f"  ✅ 리뷰수: {reviews} (정규식)")
             
-            return hirings, reviews
+            return hirings, reviews, rating
             
         except Exception as e:
             print(f"  ❌ 데이터 추출 오류: {e}")
-            return 0, 0
+            return 0, 0, 0.0
     
     def collect_competitor_data(self, driver, competitor_id):
         """특정 경쟁사 데이터 수집"""
@@ -164,9 +166,9 @@ class SoomgoSeleniumCollector:
             print(f"  ✅ 페이지 로드 완료")
             
             # 데이터 추출
-            hirings, reviews = self.extract_data_from_page(driver)
+            hirings, reviews, rating = self.extract_data_from_page(driver)
             
-            print(f"  추출 결과: 고용 {hirings}, 리뷰 {reviews}")
+            print(f"  추출 결과: 고용 {hirings}, 리뷰 {reviews}, 평점 {rating}")
             
             if hirings == 0 and reviews == 0:
                 print(f"  ⚠️  데이터 추출 실패")
@@ -178,11 +180,12 @@ class SoomgoSeleniumCollector:
             data = {
                 'hirings': hirings,
                 'reviews': reviews,
+                'rating': rating,
                 'timestamp': datetime.now().isoformat(),
                 'date': datetime.now().strftime('%Y-%m-%d')
             }
             
-            print(f"  ✅ {name}: 고용 {hirings}, 리뷰 {reviews}")
+            print(f"  ✅ {name}: 고용 {hirings}, 리뷰 {reviews}, 평점 {rating}")
             return data
             
         except Exception as e:
@@ -225,6 +228,7 @@ class SoomgoSeleniumCollector:
         storage_data[date_key] = {
             'hirings': data['hirings'],
             'reviews': data['reviews'],
+            'rating': data.get('rating', 0.0),
             'timestamp': datetime.now().isoformat()
         }
         
