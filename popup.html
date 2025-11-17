@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>숨고 경쟁사 분석</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 헤더 -->
+    <header>
+      <h1>숨고 경쟁사 분석</h1>
+      <div class="header-actions">
+        <button id="syncGithubBtn" class="btn-sync" title="GitHub에서 데이터 가져오기">🔄</button>
+        <button id="collectNowBtn" class="btn-collect">지금 수집</button>
+        <button id="settingsBtn" class="btn-settings">⚙</button>
+      </div>
+    </header>
+
+    <!-- 설정 패널 -->
+    <div id="settingsPanel" class="settings-panel hidden">
+      <div class="setting-item">
+        <label>자동 수집</label>
+        <input type="checkbox" id="autoCollectToggle" checked>
+      </div>
+      <div class="setting-item">
+        <label>수집 시간</label>
+        <input type="time" id="autoCollectTime" value="09:00">
+      </div>
+      <button id="saveSettingsBtn" class="btn-save">저장</button>
+    </div>
+
+    <!-- 월 네비게이션 + 요약 통합 -->
+    <div class="top-bar">
+      <button id="prevMonthBtn" class="nav-btn">◀</button>
+      <span id="currentMonth" class="month-text">2025년 11월</span>
+      <button id="nextMonthBtn" class="nav-btn">▶</button>
+      <div class="quick-stats">
+        <span class="qs" id="qs-son">손 -/-</span>
+        <span class="qs" id="qs-seoul">정 -/-</span>
+        <span class="qs highlight" id="qs-pass">패스 -/-</span>
+      </div>
+    </div>
+
+    <!-- 캘린더 (메인) -->
+    <div class="calendars">
+      <div class="cal-wrap">
+        <div class="cal-header">손코치 <span class="today-delta" id="td-son">-</span></div>
+        <div class="calendar" id="cal-soncoach"></div>
+      </div>
+      
+      <div class="cal-wrap">
+        <div class="cal-header">정코치 <span class="today-delta" id="td-seoul">-</span></div>
+        <div class="calendar" id="cal-seoulcoach"></div>
+      </div>
+      
+      <div class="cal-wrap highlight">
+        <div class="cal-header">패스 <span class="my-tag">MY</span> <span class="today-delta" id="td-pass">-</span> <span class="streak" id="streak"></span></div>
+        <div class="calendar" id="cal-passcoach"></div>
+      </div>
+    </div>
+
+    <!-- 통계 (하단) -->
+    <div class="stats-footer">
+      <div class="stats-grid">
+        <div class="stat-section">
+          <div class="stat-header">
+            <button class="stat-nav-btn" id="prevWeekBtn">◀</button>
+            <div class="stat-title-box">
+              <div class="stat-title">1주차 <span class="stat-date-inline" id="weekRange">-</span></div>
+            </div>
+            <button class="stat-nav-btn" id="nextWeekBtn">▶</button>
+          </div>
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>고용</th>
+                <th>리뷰</th>
+              </tr>
+            </thead>
+            <tbody id="stats7Body">
+              <tr><td colspan="3">-</td></tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="stat-section">
+          <div class="stat-header">
+            <button class="stat-nav-btn" id="prevStatMonthBtn">◀</button>
+            <div class="stat-title-box">
+              <div class="stat-title" id="monthStatsTitle">월 통계</div>
+            </div>
+            <button class="stat-nav-btn" id="nextStatMonthBtn">▶</button>
+          </div>
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>고용</th>
+                <th>리뷰</th>
+              </tr>
+            </thead>
+            <tbody id="statsMonthBody">
+              <tr><td colspan="3">-</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="last-update" id="lastUpdate">-</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
