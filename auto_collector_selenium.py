@@ -48,45 +48,96 @@ class SoomgoSeleniumCollector:
         return driver
     
     def extract_data_from_page(self, driver):
-        """Selenium으로 데이터 추출"""
+        """다중 선택자로 데이터 추출"""
         try:
             # 페이지 로딩 대기
             time.sleep(3)
             
-            # 방법 1: XPath로 찾기
-            try:
-                # "고용 507회" 같은 텍스트 찾기
-                hiring_element = driver.find_element(By.XPATH, "//*[contains(text(), '고용')]")
-                hiring_text = hiring_element.text
-                hirings = int(''.join(filter(str.isdigit, hiring_text)))
-            except:
-                hirings = 0
+            hirings = 0
+            reviews = 0
             
-            try:
-                # "리뷰 205개" 같은 텍스트 찾기
-                review_element = driver.find_element(By.XPATH, "//*[contains(text(), '리뷰')]")
-                review_text = review_element.text
-                # 숫자만 추출하되, 가장 큰 숫자 선택 (리뷰 개수가 클 것)
-                import re
-                numbers = re.findall(r'\d+', review_text)
-                if numbers:
-                    reviews = max([int(n) for n in numbers])
-            except:
-                reviews = 0
+            # 고용수 추출 - 다중 CSS 선택자
+            hiring_selectors = [
+                "div.statistics-info > div:first-child div.statistics-info-item-contents",
+                "div.statistics-info-item-contents",
+                "[class*='statistics'] [class*='contents']"
+            ]
             
-            # 방법 2: 페이지 전체 텍스트에서 정규식으로 찾기
-            if hirings == 0 and reviews == 0:
-                import re
+            for selector in hiring_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    print(f"  📍 고용 선택자 '{selector}': {len(elements)}개 발견")
+                    
+                    if elements:
+                        text = elements[0].text.replace(',', '').strip()
+                        numbers = re.findall(r'\d+', text)
+                        if numbers:
+                            hirings = int(numbers[0])
+                            print(f"  ✅ 고용수: {hirings} (선택자 성공)")
+                            break
+                except Exception as e:
+                    continue
+            
+            # 리뷰수 추출 - 다중 CSS 선택자
+            review_selectors = [
+                "div.review-info span.count",
+                "span.count",
+                "[class*='review'] [class*='count']"
+            ]
+            
+            for selector in review_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    print(f"  📍 리뷰 선택자 '{selector}': {len(elements)}개 발견")
+                    
+                    if elements:
+                        text = elements[0].text.replace(',', '').strip()
+                        numbers = re.findall(r'\d+', text)
+                        if numbers:
+                            # 가장 큰 숫자 선택
+                            reviews = max([int(n) for n in numbers])
+                            print(f"  ✅ 리뷰수: {reviews} (선택자 성공)")
+                            break
+                except Exception as e:
+                    continue
+            
+            # 백업: XPath + 정규식
+            if hirings == 0:
+                try:
+                    hiring_element = driver.find_element(By.XPATH, "//*[contains(text(), '고용')]")
+                    hiring_text = hiring_element.text
+                    hirings = int(''.join(filter(str.isdigit, hiring_text)))
+                    print(f"  ✅ 고용수: {hirings} (XPath)")
+                except:
+                    pass
+            
+            if reviews == 0:
+                try:
+                    review_element = driver.find_element(By.XPATH, "//*[contains(text(), '리뷰')]")
+                    review_text = review_element.text
+                    numbers = re.findall(r'\d+', review_text)
+                    if numbers:
+                        reviews = max([int(n) for n in numbers])
+                        print(f"  ✅ 리뷰수: {reviews} (XPath)")
+                except:
+                    pass
+            
+            # 최후: 페이지 전체 텍스트
+            if hirings == 0 or reviews == 0:
+                print(f"  🔍 페이지 전체 검색 시작...")
                 page_text = driver.find_element(By.TAG_NAME, 'body').text
                 
-                hiring_match = re.search(r'고용[^\d]*(\d+)', page_text)
-                if hiring_match:
-                    hirings = int(hiring_match.group(1))
+                if hirings == 0:
+                    hiring_match = re.search(r'고용[수]?\s*[:\s]*(\d+)', page_text)
+                    if hiring_match:
+                        hirings = int(hiring_match.group(1))
+                        print(f"  ✅ 고용수: {hirings} (정규식)")
                 
-                # 리뷰는 더 큰 숫자 찾기 (100 이상)
-                review_match = re.search(r'리뷰[^\d]*(\d{2,3})', page_text)
-                if review_match:
-                    reviews = int(review_match.group(1))
+                if reviews == 0:
+                    review_match = re.search(r'리뷰[^\d]*(\d{2,3})', page_text)
+                    if review_match:
+                        reviews = int(review_match.group(1))
+                        print(f"  ✅ 리뷰수: {reviews} (정규식)")
             
             return hirings, reviews
             
@@ -138,30 +189,58 @@ class SoomgoSeleniumCollector:
             return None
     
     def save_data(self, competitor_id, data):
-        """데이터 저장"""
+        """데이터 저장 - JSON 손상 방지"""
         if not data:
             return
         
         os.makedirs('collected_data', exist_ok=True)
         filepath = f'collected_data/{competitor_id}.json'
         
+        # 기존 데이터 로드
+        storage_data = {}
         if os.path.exists(filepath):
-            with open(filepath, 'r', encoding='utf-8') as f:
-                storage_data = json.load(f)
-        else:
-            storage_data = {}
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    if content:  # 빈 파일이 아닌 경우만
+                        storage_data = json.loads(content)
+                    else:
+                        print(f"  ⚠️ 빈 파일 감지: {filepath}")
+            except json.JSONDecodeError as e:
+                print(f"  ⚠️ JSON 파싱 오류: {filepath}")
+                print(f"     백업 생성: {filepath}.backup")
+                # 손상된 파일 백업
+                if os.path.exists(filepath):
+                    with open(f'{filepath}.backup', 'w', encoding='utf-8') as backup:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            backup.write(f.read())
+                storage_data = {}
+            except Exception as e:
+                print(f"  ❌ 파일 읽기 오류: {e}")
+                storage_data = {}
         
+        # 새 데이터 추가
         date_key = data['date']
         storage_data[date_key] = {
             'hirings': data['hirings'],
-            'reviews': data['reviews']
+            'reviews': data['reviews'],
+            'timestamp': datetime.now().isoformat()
         }
         
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(storage_data, f, ensure_ascii=False, indent=2)
-        
-        print(f"💾 {competitor_id} 데이터 저장 완료")
-        print(f"   파일: {filepath}\n")
+        # 저장 (원자적 쓰기)
+        temp_filepath = f'{filepath}.tmp'
+        try:
+            with open(temp_filepath, 'w', encoding='utf-8') as f:
+                json.dump(storage_data, f, ensure_ascii=False, indent=2)
+            
+            # 임시 파일을 원본으로 교체
+            os.replace(temp_filepath, filepath)
+            print(f"💾 {competitor_id} 데이터 저장 완료")
+            print(f"   파일: {filepath}\n")
+        except Exception as e:
+            print(f"  ❌ 저장 실패: {e}")
+            if os.path.exists(temp_filepath):
+                os.remove(temp_filepath)
     
     def collect_all(self):
         """모든 경쟁사 데이터 수집"""
