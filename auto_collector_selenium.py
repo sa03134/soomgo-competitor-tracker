@@ -1,6 +1,7 @@
 """
 숨고 경쟁사 분석 - Selenium 기반 데이터 수집
 JavaScript 렌더링 페이지에서 데이터 추출
+v10.1.0 - 리뷰 텍스트 추출 추가
 """
 
 from selenium import webdriver
@@ -57,6 +58,7 @@ class SoomgoSeleniumCollector:
             hirings = 0
             reviews = 0
             rating = 0.0
+            review_texts = []
             
             # 고용수 추출 - 정확한 선택자
             hiring_selectors = [
@@ -68,7 +70,7 @@ class SoomgoSeleniumCollector:
             for selector in hiring_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  📍 고용 선택자: {len(elements)}개 발견")
+                    print(f"  🔍 고용 선택자: {len(elements)}개 발견")
                     
                     if elements:
                         text = elements[0].text.replace(',', '').strip()
@@ -90,7 +92,7 @@ class SoomgoSeleniumCollector:
             for selector in review_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  📍 리뷰 선택자: {len(elements)}개 발견")
+                    print(f"  🔍 리뷰 선택자: {len(elements)}개 발견")
                     
                     if elements:
                         text = elements[0].text.replace(',', '').strip()
@@ -112,7 +114,7 @@ class SoomgoSeleniumCollector:
             for selector in rating_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  📍 평점 선택자: {len(elements)}개 발견")
+                    print(f"  🔍 평점 선택자: {len(elements)}개 발견")
                     
                     if elements:
                         text = elements[0].text.strip()
@@ -124,6 +126,22 @@ class SoomgoSeleniumCollector:
                             break
                 except Exception as e:
                     continue
+            
+            # 리뷰 텍스트 추출 (최근 5개)
+            try:
+                review_selector = "span.prisma-typography.body14-regular.primary.review-content"
+                review_elements = driver.find_elements(By.CSS_SELECTOR, review_selector)
+                
+                if review_elements:
+                    review_texts = [el.text.strip() for el in review_elements[:5] if el.text.strip()]
+                    print(f"  ✅ 리뷰 {len(review_texts)}개 추출")
+                    
+                    # 리뷰 내용 출력
+                    for i, review in enumerate(review_texts, 1):
+                        preview = review[:50] + ('...' if len(review) > 50 else '')
+                        print(f"     {i}. {preview}")
+            except Exception as e:
+                print(f"  ⚠️ 리뷰 추출 실패: {e}")
             
             # 백업: 정규식
             if hirings == 0 or reviews == 0:
@@ -142,11 +160,11 @@ class SoomgoSeleniumCollector:
                         reviews = int(review_match.group(1))
                         print(f"  ✅ 리뷰수: {reviews} (정규식)")
             
-            return hirings, reviews, rating
+            return hirings, reviews, rating, review_texts
             
         except Exception as e:
             print(f"  ❌ 데이터 추출 오류: {e}")
-            return 0, 0, 0.0
+            return 0, 0, 0.0, []
     
     def collect_competitor_data(self, driver, competitor_id):
         """특정 경쟁사 데이터 수집"""
@@ -166,9 +184,9 @@ class SoomgoSeleniumCollector:
             print(f"  ✅ 페이지 로드 완료")
             
             # 데이터 추출
-            hirings, reviews, rating = self.extract_data_from_page(driver)
+            hirings, reviews, rating, review_texts = self.extract_data_from_page(driver)
             
-            print(f"  추출 결과: 고용 {hirings}, 리뷰 {reviews}, 평점 {rating}")
+            print(f"  추출 결과: 고용 {hirings}, 리뷰 {reviews}, 평점 {rating}, 리뷰텍스트 {len(review_texts)}개")
             
             if hirings == 0 and reviews == 0:
                 print(f"  ⚠️  데이터 추출 실패")
@@ -181,6 +199,7 @@ class SoomgoSeleniumCollector:
                 'hirings': hirings,
                 'reviews': reviews,
                 'rating': rating,
+                'review_texts': review_texts,
                 'timestamp': datetime.now().isoformat(),
                 'date': datetime.now().strftime('%Y-%m-%d')
             }
@@ -229,6 +248,7 @@ class SoomgoSeleniumCollector:
             'hirings': data['hirings'],
             'reviews': data['reviews'],
             'rating': data.get('rating', 0.0),
+            'review_texts': data.get('review_texts', []),
             'timestamp': datetime.now().isoformat()
         }
         
