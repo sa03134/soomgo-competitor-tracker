@@ -1,5 +1,5 @@
 """
-숨고 경쟁사 분석 - 안정적 버전
+숨고 경쟁사 분석 - HTML 구조 기반 수정
 """
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -35,7 +35,6 @@ class SoomgoSeleniumCollector:
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
-        options.add_argument('--disable-images')
         
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
@@ -50,81 +49,76 @@ class SoomgoSeleniumCollector:
         rating = 0.0
         
         try:
-            # 고용수
-            hiring_selectors = [
-                "div.statistics-info > div:first-of-type div.statistics-info-item-contents",
-                "div.statistics-info-item-contents"
-            ]
+            # 통계 영역 찾기
+            stats_info = driver.find_element(By.CSS_SELECTOR, "div.statistics-info")
             
-            for selector in hiring_selectors:
-                try:
-                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    if elements:
-                        text = elements[0].text.replace(',', '').strip()
-                        numbers = re.findall(r'\d+', text)
-                        if numbers:
-                            hirings = int(numbers[0])
-                            break
-                except:
-                    continue
+            # 모든 statistics-info-item 찾기
+            items = stats_info.find_elements(By.CSS_SELECTOR, "div.statistics-info-item")
             
-            # 리뷰수
-            review_selectors = [
-                "div.review-info span.count",
-                "span.count"
-            ]
+            print(f"  찾은 항목 수: {len(items)}")
             
-            for selector in review_selectors:
-                try:
-                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    if elements:
-                        text = elements[0].text.replace(',', '').strip()
-                        numbers = re.findall(r'\d+', text)
-                        if numbers:
-                            reviews = int(numbers[0])
-                            break
-                except:
-                    continue
-            
-            # 평점
-            rating_selectors = [
-                "div.review-info span.rate",
-                "span.rate"
-            ]
-            
-            for selector in rating_selectors:
-                try:
-                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    if elements:
-                        text = elements[0].text.strip()
-                        rating_match = re.search(r'(\d+\.?\d*)', text)
-                        if rating_match:
-                            rating = float(rating_match.group(1))
-                            break
-                except:
-                    continue
+            for idx, item in enumerate(items):
+                text = item.text.strip()
+                print(f"  항목 {idx}: {text[:50]}")
+                
+                # 첫 번째 항목 = 고용수
+                if idx == 0:
+                    numbers = re.findall(r'\d+', text.replace(',', ''))
+                    if numbers:
+                        hirings = int(numbers[0])
+                        print(f"  ✅ 고용수: {hirings}")
+                
+                # review-info 클래스 있는 항목 = 리뷰
+                if 'review-info' in item.get_attribute('class'):
+                    # 평점 찾기
+                    try:
+                        rate_el = item.find_element(By.CSS_SELECTOR, "span.rate")
+                        rating = float(rate_el.text.strip())
+                        print(f"  ✅ 평점: {rating}")
+                    except:
+                        pass
+                    
+                    # 리뷰수 찾기
+                    try:
+                        count_el = item.find_element(By.CSS_SELECTOR, "span.count")
+                        count_text = count_el.text.strip().replace('(', '').replace(')', '')
+                        reviews = int(count_text)
+                        print(f"  ✅ 리뷰수: {reviews}")
+                    except:
+                        pass
             
         except Exception as e:
-            print(f"선택자 오류: {e}")
+            print(f"  ❌ 선택자 오류: {e}")
         
-        # 백업
+        # 최후의 수단: 정규식
         if hirings == 0 or reviews == 0:
+            print(f"  백업: 정규식 사용")
             try:
                 page_text = driver.find_element(By.TAG_NAME, 'body').text
                 
                 if hirings == 0:
-                    hiring_match = re.search(r'고용\s*(\d+)', page_text)
+                    # "525회" 또는 "고용 525"
+                    hiring_match = re.search(r'(\d+)회|고용\D*(\d+)', page_text)
                     if hiring_match:
-                        hirings = int(hiring_match.group(1))
+                        hirings = int(hiring_match.group(1) or hiring_match.group(2))
+                        print(f"  ✅ 고용수 (정규식): {hirings}")
                 
                 if reviews == 0:
+                    # "(207)"
                     review_match = re.search(r'\((\d+)\)', page_text)
                     if review_match:
                         reviews = int(review_match.group(1))
+                        print(f"  ✅ 리뷰수 (정규식): {reviews}")
+                
+                if rating == 0:
+                    # "5.0"
+                    rating_match = re.search(r'(\d\.\d)', page_text)
+                    if rating_match:
+                        rating = float(rating_match.group(1))
+                        print(f"  ✅ 평점 (정규식): {rating}")
             except:
                 pass
         
-        print(f"  고용 {hirings}, 리뷰 {reviews}, 평점 {rating}")
         return hirings, reviews, rating
     
     def collect_competitor_data(self, driver, competitor_id):
