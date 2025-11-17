@@ -1,13 +1,8 @@
-// =========================================
-// 숨고 경쟁사 분석 - 메인 로직
-// v10.1.0 - 툴팁 버그 수정, 손코치 정보 표시
-// =========================================
-
 // 전역 변수
 const competitors = [
-  { id: 'soncoach', name: '손코치', color: '#4a5568' },
-  { id: 'seoulcoach', name: '정코치', color: '#4a5568' },
-  { id: 'passcoach', name: '패스', color: '#6C3CF2', isMine: true }
+  { id: 'soncoach', name: '손코치', url: 'https://soomgo.com/profile/users/16756708', color: '#4a5568' },
+  { id: 'seoulcoach', name: '정코치', url: 'https://soomgo.com/profile/users/3379598', color: '#4a5568' },
+  { id: 'passcoach', name: '패스', url: 'https://soomgo.com/profile/users/11571181', color: '#6C3CF2', isMine: true }
 ];
 
 let currentMonth = new Date();
@@ -16,10 +11,7 @@ let currentStatMonth = new Date();
 let currentTooltip = null;
 let hoverTimeout = null;
 
-// =========================================
 // GitHub 동기화
-// =========================================
-
 async function syncFromGithub() {
   const GITHUB_BASE = 'https://raw.githubusercontent.com/sa03134/soomgo-competitor-tracker/main/collected_data';
   
@@ -49,10 +41,7 @@ async function syncFromGithub() {
   }
 }
 
-// =========================================
-// 토스트 알림
-// =========================================
-
+// 토스트
 function showToast(message) {
   let toast = document.querySelector('.toast');
   
@@ -70,10 +59,7 @@ function showToast(message) {
   }, 3000);
 }
 
-// =========================================
 // 캘린더 렌더링
-// =========================================
-
 async function renderCalendar(compId) {
   const comp = competitors.find(c => c.id === compId);
   if (!comp) return;
@@ -138,7 +124,7 @@ async function renderCalendar(compId) {
         ` : ''}
       `;
       
-      // 툴팁 이벤트 (debounce 적용)
+      // 툴팁 이벤트
       dayEl.addEventListener('mouseenter', (e) => {
         if (hoverTimeout) clearTimeout(hoverTimeout);
         
@@ -162,12 +148,26 @@ async function renderCalendar(compId) {
   
   // 오늘의 델타 업데이트
   updateTodayDelta(compId, data);
+  
+  // 캘린더 헤더에 링크 추가
+  updateCalendarHeader(compId, comp);
 }
 
-// =========================================
-// 오늘의 델타 (Today Delta) 업데이트
-// =========================================
+// 캘린더 헤더 링크
+function updateCalendarHeader(compId, comp) {
+  const calEl = document.getElementById(`cal-${compId}`);
+  if (!calEl) return;
+  
+  const headerEl = calEl.previousElementSibling;
+  if (headerEl && headerEl.classList.contains('cal-header')) {
+    headerEl.style.cursor = 'pointer';
+    headerEl.onclick = () => {
+      window.open(comp.url, '_blank');
+    };
+  }
+}
 
+// 오늘의 델타
 function updateTodayDelta(compId, data) {
   const today = new Date().toISOString().split('T')[0];
   const todayData = data[today];
@@ -192,12 +192,10 @@ function updateTodayDelta(compId, data) {
   tdEl.className = hChange < 0 || rChange < 0 ? 'today-delta neg' : 'today-delta';
 }
 
-// =========================================
-// 툴팁 표시/숨김
-// =========================================
-
+// 툴팁
 function showTooltip(element, comp, dateStr, todayData, prevData) {
-  // 기존 툴팁 즉시 제거
+  if (!element) return;
+  
   if (currentTooltip) {
     currentTooltip.remove();
     currentTooltip = null;
@@ -263,35 +261,41 @@ function showTooltip(element, comp, dateStr, todayData, prevData) {
   currentTooltip = tooltip;
   
   // 위치 계산
-  const rect = element.getBoundingClientRect();
-  const tooltipRect = tooltip.getBoundingClientRect();
-  
-  let top = rect.top - tooltipRect.height - 8;
-  let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-  
-  // 화면 밖으로 나가지 않게
-  if (top < 0) {
-    top = rect.bottom + 8;
+  try {
+    const rect = element.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    
+    let top = rect.top - tooltipRect.height - 8;
+    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    
+    if (top < 0) {
+      top = rect.bottom + 8;
+    }
+    if (left < 0) {
+      left = 8;
+    }
+    if (left + tooltipRect.width > window.innerWidth) {
+      left = window.innerWidth - tooltipRect.width - 8;
+    }
+    
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+    
+    setTimeout(() => tooltip.classList.add('show'), 10);
+  } catch (error) {
+    console.error('툴팁 위치 오류:', error);
+    if (tooltip.parentNode) {
+      tooltip.remove();
+    }
+    currentTooltip = null;
   }
-  if (left < 0) {
-    left = 8;
-  }
-  if (left + tooltipRect.width > window.innerWidth) {
-    left = window.innerWidth - tooltipRect.width - 8;
-  }
-  
-  tooltip.style.top = `${top}px`;
-  tooltip.style.left = `${left}px`;
-  
-  // 애니메이션
-  setTimeout(() => tooltip.classList.add('show'), 10);
 }
 
 function hideTooltip() {
   if (currentTooltip) {
     currentTooltip.classList.remove('show');
     setTimeout(() => {
-      if (currentTooltip) {
+      if (currentTooltip && currentTooltip.parentNode) {
         currentTooltip.remove();
         currentTooltip = null;
       }
@@ -299,22 +303,28 @@ function hideTooltip() {
   }
 }
 
-// =========================================
-// 연속 고용 일수 계산
-// =========================================
-
+// 연속 고용 (오늘 기준)
 async function updateStreak() {
   const result = await chrome.storage.local.get(['passcoach']);
   const data = result.passcoach || {};
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
   const dates = Object.keys(data).sort().reverse();
   let streak = 0;
   
   for (let i = 0; i < dates.length - 1; i++) {
-    const today = data[dates[i]];
-    const yesterday = data[dates[i + 1]];
+    const currentDate = new Date(dates[i]);
+    currentDate.setHours(0, 0, 0, 0);
     
-    if (today.hirings > yesterday.hirings) {
+    // 오늘 이후 날짜는 건너뛰기
+    if (currentDate > today) continue;
+    
+    const todayData = data[dates[i]];
+    const yesterdayData = data[dates[i + 1]];
+    
+    if (todayData && yesterdayData && todayData.hirings > yesterdayData.hirings) {
       streak++;
     } else {
       break;
@@ -327,10 +337,7 @@ async function updateStreak() {
   }
 }
 
-// =========================================
-// 빠른 통계 (Quick Stats)
-// =========================================
-
+// 빠른 통계
 async function updateQuickStats() {
   for (const comp of competitors) {
     const result = await chrome.storage.local.get([comp.id]);
@@ -345,30 +352,25 @@ async function updateQuickStats() {
     if (!qsEl) continue;
     
     if (todayData) {
-      qsEl.textContent = `${comp.name.substring(0, 1)} ${todayData.hirings}/${todayData.reviews}`;
+      qsEl.textContent = `${comp.name} ${todayData.hirings}/${todayData.reviews}`;
     } else {
-      qsEl.textContent = `${comp.name.substring(0, 1)} -/-`;
+      qsEl.textContent = `${comp.name} -/-`;
     }
   }
 }
 
-// =========================================
 // 통계 테이블
-// =========================================
-
 async function updateStats7() {
   const tbody = document.getElementById('stats7Body');
   if (!tbody) return;
   tbody.innerHTML = '';
   
-  // 주차 계산
   const today = new Date();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const offset = currentWeekOffset * 7;
   const weekStart = new Date(startOfMonth.getTime() + offset * 24 * 60 * 60 * 1000);
   const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
   
-  // 범위 표시
   const weekRangeEl = document.getElementById('weekRange');
   if (weekRangeEl) {
     weekRangeEl.textContent = `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
@@ -415,7 +417,6 @@ async function updateStatsMonth() {
   const year = currentStatMonth.getFullYear();
   const month = currentStatMonth.getMonth();
   
-  // 제목 업데이트
   const titleEl = document.getElementById('monthStatsTitle');
   if (titleEl) {
     titleEl.textContent = `${year}년 ${month + 1}월`;
@@ -450,10 +451,7 @@ async function updateStatsMonth() {
   }
 }
 
-// =========================================
 // 네비게이션
-// =========================================
-
 function updateMonthText() {
   const monthText = document.getElementById('currentMonth');
   if (monthText) {
@@ -484,10 +482,7 @@ function updateNavButtons() {
   }
 }
 
-// =========================================
 // 최종 업데이트 시간
-// =========================================
-
 function updateLastUpdateTime() {
   const lastUpdateEl = document.getElementById('lastUpdate');
   if (lastUpdateEl) {
@@ -496,10 +491,7 @@ function updateLastUpdateTime() {
   }
 }
 
-// =========================================
 // 전체 렌더링
-// =========================================
-
 async function renderAll() {
   for (const comp of competitors) {
     await renderCalendar(comp.id);
@@ -513,26 +505,19 @@ async function renderAll() {
   updateNavButtons();
 }
 
-// =========================================
 // 이벤트 리스너
-// =========================================
-
 document.addEventListener('DOMContentLoaded', async () => {
-  // 초기 렌더링
   await syncFromGithub();
   
-  // 새로고침
   document.getElementById('collectNowBtn')?.addEventListener('click', async () => {
     await syncFromGithub();
   });
   
-  // 설정
   document.getElementById('settingsBtn')?.addEventListener('click', () => {
     const panel = document.getElementById('settingsPanel');
     panel?.classList.toggle('hidden');
   });
   
-  // 월 네비게이션
   document.getElementById('prevMonthBtn')?.addEventListener('click', () => {
     currentMonth.setMonth(currentMonth.getMonth() - 1);
     renderAll();
@@ -543,7 +528,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderAll();
   });
   
-  // 주차 네비게이션
   document.getElementById('prevWeekBtn')?.addEventListener('click', () => {
     currentWeekOffset--;
     updateStats7();
@@ -556,7 +540,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateNavButtons();
   });
   
-  // 월 통계 네비게이션
   document.getElementById('prevStatMonthBtn')?.addEventListener('click', () => {
     currentStatMonth.setMonth(currentStatMonth.getMonth() - 1);
     updateStatsMonth();

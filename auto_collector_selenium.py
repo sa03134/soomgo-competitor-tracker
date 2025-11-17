@@ -1,13 +1,12 @@
 """
-숨고 경쟁사 분석 - Selenium 기반 데이터 수집
-JavaScript 렌더링 페이지에서 데이터 추출
-v10.1.0 - 리뷰 텍스트 추출 추가
+숨고 경쟁사 분석 - Selenium (최적화)
 """
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import json
 import time
@@ -15,10 +14,8 @@ import re
 from datetime import datetime
 import os
 
-
 class SoomgoSeleniumCollector:
     def __init__(self):
-        """초기화"""
         self.competitors = {
             'soncoach': {
                 'url': 'https://soomgo.com/profile/users/16756708',
@@ -35,139 +32,97 @@ class SoomgoSeleniumCollector:
         }
     
     def setup_driver(self):
-        """Chrome 드라이버 설정"""
         options = Options()
-        options.add_argument('--headless')  # 백그라운드 실행
+        options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
-        options.add_argument('--window-size=1920,1080')
+        options.add_argument('--disable-images')  # 이미지 로딩 안함 (속도 향상)
+        options.add_argument('--blink-settings=imagesEnabled=false')  # 이미지 비활성화
+        options.page_load_strategy = 'eager'  # DOM 준비 후 바로 실행
         options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
         
-        # webdriver-manager로 자동 설치 및 관리
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
+        driver.set_page_load_timeout(20)  # 타임아웃 설정
         return driver
     
     def extract_data_from_page(self, driver):
-        """정확한 CSS 선택자로 데이터 추출"""
         try:
-            # 페이지 로딩 대기 (더 길게)
-            time.sleep(5)
+            # WebDriverWait 사용 (더 스마트한 대기)
+            wait = WebDriverWait(driver, 10)
+            
+            # 통계 정보가 나타날 때까지 대기
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.statistics-info")))
             
             hirings = 0
             reviews = 0
             rating = 0.0
-            review_texts = []
             
-            # 고용수 추출 - 정확한 선택자
+            # 고용수 - 개선된 선택자
             hiring_selectors = [
-                "#app-body > div > div.container > div.row.no-gutters > div.profile-section.col-lg-auto.col-12 > div > div.profile-overview > div.info > div.detail-info > div.statistics-info > div:nth-child(1) > div.statistics-info-item-contents",
-                "div.statistics-info > div:nth-child(1) > div.statistics-info-item-contents",
-                "div.statistics-info div.statistics-info-item-contents"
+                "div.statistics-info > div:first-of-type div.statistics-info-item-contents",
+                "div.statistics-info-item-contents"
             ]
             
             for selector in hiring_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  🔍 고용 선택자: {len(elements)}개 발견")
-                    
                     if elements:
-                        text = elements[0].text.replace(',', '').strip()
+                        text = elements[0].text.replace(',', '').replace('회', '').strip()
                         numbers = re.findall(r'\d+', text)
                         if numbers:
                             hirings = int(numbers[0])
                             print(f"  ✅ 고용수: {hirings}")
                             break
-                except Exception as e:
+                except:
                     continue
             
-            # 리뷰수 추출 - 정확한 선택자
+            # 리뷰수 - 개선된 선택자
             review_selectors = [
-                "#app-body > div > div.container > div.row.no-gutters > div.profile-section.col-lg-auto.col-12 > div > div.profile-overview > div.info > div.detail-info > div.statistics-info > div.statistics-info-item.review-info > div.statistics-info-item-contents > span.count",
-                "div.statistics-info-item.review-info span.count",
-                "div.review-info span.count"
+                "div.review-info span.count",
+                "span.count"
             ]
             
             for selector in review_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  🔍 리뷰 선택자: {len(elements)}개 발견")
-                    
                     if elements:
-                        text = elements[0].text.replace(',', '').strip()
+                        text = elements[0].text.replace(',', '').replace('(', '').replace(')', '').strip()
                         numbers = re.findall(r'\d+', text)
                         if numbers:
-                            reviews = max([int(n) for n in numbers])
+                            reviews = int(numbers[0])
                             print(f"  ✅ 리뷰수: {reviews}")
                             break
-                except Exception as e:
+                except:
                     continue
             
-            # 평점 추출
+            # 평점
             rating_selectors = [
-                "#app-body > div > div.container > div.row.no-gutters > div.profile-section.col-lg-auto.col-12 > div > div.profile-overview > div.info > div.detail-info > div.statistics-info > div.statistics-info-item.review-info > div.statistics-info-item-contents > span.rate",
-                "div.statistics-info-item.review-info span.rate",
+                "div.review-info span.rate",
                 "span.rate"
             ]
             
             for selector in rating_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    print(f"  🔍 평점 선택자: {len(elements)}개 발견")
-                    
                     if elements:
                         text = elements[0].text.strip()
-                        # "5.0" 같은 형태
                         rating_match = re.search(r'(\d+\.?\d*)', text)
                         if rating_match:
                             rating = float(rating_match.group(1))
                             print(f"  ✅ 평점: {rating}")
                             break
-                except Exception as e:
+                except:
                     continue
             
-            # 리뷰 텍스트 추출 (최근 5개)
-            try:
-                review_selector = "span.prisma-typography.body14-regular.primary.review-content"
-                review_elements = driver.find_elements(By.CSS_SELECTOR, review_selector)
-                
-                if review_elements:
-                    review_texts = [el.text.strip() for el in review_elements[:5] if el.text.strip()]
-                    print(f"  ✅ 리뷰 {len(review_texts)}개 추출")
-                    
-                    # 리뷰 내용 출력
-                    for i, review in enumerate(review_texts, 1):
-                        preview = review[:50] + ('...' if len(review) > 50 else '')
-                        print(f"     {i}. {preview}")
-            except Exception as e:
-                print(f"  ⚠️ 리뷰 추출 실패: {e}")
-            
-            # 백업: 정규식
-            if hirings == 0 or reviews == 0:
-                print(f"  🔍 백업: 정규식 검색")
-                page_text = driver.find_element(By.TAG_NAME, 'body').text
-                
-                if hirings == 0:
-                    hiring_match = re.search(r'고용[수]?\s*[:\s]*(\d+)', page_text)
-                    if hiring_match:
-                        hirings = int(hiring_match.group(1))
-                        print(f"  ✅ 고용수: {hirings} (정규식)")
-                
-                if reviews == 0:
-                    review_match = re.search(r'리뷰[^\d]*(\d{2,3})', page_text)
-                    if review_match:
-                        reviews = int(review_match.group(1))
-                        print(f"  ✅ 리뷰수: {reviews} (정규식)")
-            
-            return hirings, reviews, rating, review_texts
+            return hirings, reviews, rating
             
         except Exception as e:
-            print(f"  ❌ 데이터 추출 오류: {e}")
-            return 0, 0, 0.0, []
+            print(f"  ❌ 추출 오류: {e}")
+            return 0, 0, 0.0
     
     def collect_competitor_data(self, driver, competitor_id):
-        """특정 경쟁사 데이터 수집"""
         competitor = self.competitors.get(competitor_id)
         if not competitor:
             return None
@@ -176,30 +131,19 @@ class SoomgoSeleniumCollector:
         name = competitor['name']
         
         print(f"🔍 {name} 수집 중...")
-        print(f"   URL: {url}")
         
         try:
-            # 페이지 열기
             driver.get(url)
-            print(f"  ✅ 페이지 로드 완료")
-            
-            # 데이터 추출
-            hirings, reviews, rating, review_texts = self.extract_data_from_page(driver)
-            
-            print(f"  추출 결과: 고용 {hirings}, 리뷰 {reviews}, 평점 {rating}, 리뷰텍스트 {len(review_texts)}개")
+            hirings, reviews, rating = self.extract_data_from_page(driver)
             
             if hirings == 0 and reviews == 0:
-                print(f"  ⚠️  데이터 추출 실패")
-                # HTML 저장 (디버깅용)
-                with open(f'debug_{competitor_id}_selenium.html', 'w', encoding='utf-8') as f:
-                    f.write(driver.page_source)
-                print(f"  💾 debug_{competitor_id}_selenium.html 저장됨")
+                print(f"  ⚠️ 데이터 추출 실패")
+                return None
             
             data = {
                 'hirings': hirings,
                 'reviews': reviews,
                 'rating': rating,
-                'review_texts': review_texts,
                 'timestamp': datetime.now().isoformat(),
                 'date': datetime.now().strftime('%Y-%m-%d')
             }
@@ -212,69 +156,47 @@ class SoomgoSeleniumCollector:
             return None
     
     def save_data(self, competitor_id, data):
-        """데이터 저장 - JSON 손상 방지"""
         if not data:
             return
         
         os.makedirs('collected_data', exist_ok=True)
         filepath = f'collected_data/{competitor_id}.json'
         
-        # 기존 데이터 로드
         storage_data = {}
         if os.path.exists(filepath):
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     content = f.read().strip()
-                    if content:  # 빈 파일이 아닌 경우만
+                    if content:
                         storage_data = json.loads(content)
-                    else:
-                        print(f"  ⚠️ 빈 파일 감지: {filepath}")
-            except json.JSONDecodeError as e:
-                print(f"  ⚠️ JSON 파싱 오류: {filepath}")
-                print(f"     백업 생성: {filepath}.backup")
-                # 손상된 파일 백업
-                if os.path.exists(filepath):
-                    with open(f'{filepath}.backup', 'w', encoding='utf-8') as backup:
-                        with open(filepath, 'r', encoding='utf-8') as f:
-                            backup.write(f.read())
-                storage_data = {}
-            except Exception as e:
-                print(f"  ❌ 파일 읽기 오류: {e}")
+            except:
                 storage_data = {}
         
-        # 새 데이터 추가
         date_key = data['date']
         storage_data[date_key] = {
             'hirings': data['hirings'],
             'reviews': data['reviews'],
             'rating': data.get('rating', 0.0),
-            'review_texts': data.get('review_texts', []),
             'timestamp': datetime.now().isoformat()
         }
         
-        # 저장 (원자적 쓰기)
         temp_filepath = f'{filepath}.tmp'
         try:
             with open(temp_filepath, 'w', encoding='utf-8') as f:
                 json.dump(storage_data, f, ensure_ascii=False, indent=2)
-            
-            # 임시 파일을 원본으로 교체
             os.replace(temp_filepath, filepath)
-            print(f"💾 {competitor_id} 데이터 저장 완료")
-            print(f"   파일: {filepath}\n")
+            print(f"💾 {competitor_id} 저장 완료\n")
         except Exception as e:
             print(f"  ❌ 저장 실패: {e}")
             if os.path.exists(temp_filepath):
                 os.remove(temp_filepath)
     
     def collect_all(self):
-        """모든 경쟁사 데이터 수집"""
         print(f"\n{'='*60}")
         print(f"🔍 데이터 수집 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"{'='*60}\n")
         
-        # 드라이버 시작
-        print("🌐 Chrome 브라우저 시작 중...")
+        print("🌐 Chrome 시작...")
         driver = self.setup_driver()
         
         try:
@@ -285,7 +207,7 @@ class SoomgoSeleniumCollector:
                 if data and (data['hirings'] > 0 or data['reviews'] > 0):
                     self.save_data(competitor_id, data)
                     success_count += 1
-                time.sleep(2)
+                time.sleep(1)  # 1초로 단축
             
             print(f"{'='*60}")
             print(f"✅ 수집 완료! ({success_count}/{len(self.competitors)})")
@@ -293,24 +215,11 @@ class SoomgoSeleniumCollector:
             
         finally:
             driver.quit()
-            print("🌐 Chrome 브라우저 종료")
-
 
 def main():
-    print("=" * 60)
-    print("🎯 숨고 경쟁사 분석 - Selenium 데이터 수집")
-    print("=" * 60)
-    print()
-    
+    print("🎯 숨고 경쟁사 분석 - Selenium")
     collector = SoomgoSeleniumCollector()
-    
-    print("📋 설정 확인:")
-    for comp_id, comp_info in collector.competitors.items():
-        print(f"   {comp_info['name']}: {comp_info['url']}")
-    print()
-    
     collector.collect_all()
-
 
 if __name__ == '__main__':
     main()
