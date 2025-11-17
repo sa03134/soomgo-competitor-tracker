@@ -656,14 +656,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // GitHub에서 데이터 가져오기
 async function syncFromGithub() {
-  // ⚠️ GitHub 저장소 URL (본인 것으로 변경)
-  const GITHUB_BASE = 'https://raw.githubusercontent.com/wst2024/soomgo-competitor-tracker/main/collected_data';
+  // GitHub 저장소 URL
+  const GITHUB_BASE = 'https://raw.githubusercontent.com/sa03134/soomgo-competitor-tracker/main/collected_data';
   
   const competitors = ['soncoach', 'seoulcoach', 'passcoach'];
   
   for (const compId of competitors) {
     try {
       const url = `${GITHUB_BASE}/${compId}.json`;
+      console.log(`🔍 가져오는 중: ${url}`);
+      
       const response = await fetch(url);
       
       if (response.ok) {
@@ -672,7 +674,7 @@ async function syncFromGithub() {
         // Chrome Storage에 저장
         await chrome.storage.local.set({ [compId]: data });
         
-        console.log(`✅ ${compId} 동기화 완료`);
+        console.log(`✅ ${compId} 동기화 완료 (${Object.keys(data).length}개 날짜)`);
       } else {
         console.log(`⚠️ ${compId} 파일 없음 (${response.status})`);
       }
