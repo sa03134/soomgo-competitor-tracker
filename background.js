@@ -17,49 +17,10 @@ const competitors = [
   }
 ];
 
-// 샘플 데이터
-const SAMPLE_DATA = {
-  soncoach: {
-    '2025-11-07': { hirings: 479, reviews: 189, timestamp: '2025-11-07T09:00:00Z' },
-    '2025-11-08': { hirings: 483, reviews: 194, timestamp: '2025-11-08T09:00:00Z' },
-    '2025-11-09': { hirings: 490, reviews: 198, timestamp: '2025-11-09T09:00:00Z' },
-    '2025-11-10': { hirings: 494, reviews: 202, timestamp: '2025-11-10T09:00:00Z' },
-    '2025-11-11': { hirings: 498, reviews: 203, timestamp: '2025-11-11T09:00:00Z' },
-    '2025-11-12': { hirings: 507, reviews: 205, timestamp: '2025-11-12T09:00:00Z' },
-    '2025-11-13': { hirings: 507, reviews: 205, timestamp: '2025-11-13T03:03:00Z' }
-  },
-  seoulcoach: {
-    '2025-11-07': { hirings: 998, reviews: 564, timestamp: '2025-11-07T09:00:00Z' },
-    '2025-11-08': { hirings: 1000, reviews: 564, timestamp: '2025-11-08T09:00:00Z' },
-    '2025-11-09': { hirings: 1001, reviews: 564, timestamp: '2025-11-09T09:00:00Z' },
-    '2025-11-10': { hirings: 1001, reviews: 564, timestamp: '2025-11-10T09:00:00Z' },
-    '2025-11-11': { hirings: 1005, reviews: 565, timestamp: '2025-11-11T09:00:00Z' },
-    '2025-11-12': { hirings: 1005, reviews: 565, timestamp: '2025-11-12T09:00:00Z' },
-    '2025-11-13': { hirings: 1005, reviews: 565, timestamp: '2025-11-13T03:03:00Z' }
-  },
-  passcoach: {
-    '2025-11-07': { hirings: 188, reviews: 119, timestamp: '2025-11-07T09:00:00Z' },
-    '2025-11-08': { hirings: 189, reviews: 119, timestamp: '2025-11-08T09:00:00Z' },
-    '2025-11-09': { hirings: 190, reviews: 121, timestamp: '2025-11-09T09:00:00Z' },
-    '2025-11-10': { hirings: 190, reviews: 122, timestamp: '2025-11-10T09:00:00Z' },
-    '2025-11-11': { hirings: 191, reviews: 122, timestamp: '2025-11-11T09:00:00Z' },
-    '2025-11-12': { hirings: 192, reviews: 123, timestamp: '2025-11-12T09:00:00Z' },
-    '2025-11-13': { hirings: 193, reviews: 123, timestamp: '2025-11-13T03:03:00Z' }
-  }
-};
-
 // 확장 프로그램 설치 시 초기화
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('숨고 경쟁사 분석기 설치됨');
-  
-  if (details.reason === 'install') {
-    const existing = await chrome.storage.local.get(['soncoach', 'seoulcoach', 'passcoach']);
-    
-    if (!existing.soncoach && !existing.seoulcoach && !existing.passcoach) {
-      await chrome.storage.local.set(SAMPLE_DATA);
-      console.log('✅ 샘플 데이터가 로드되었습니다 (11/7~11/13)');
-    }
-  }
+  console.log('💡 확장을 열면 자동으로 GitHub에서 데이터를 가져옵니다!');
   
   const defaultSettings = {
     autoCollectTime: '09:00',

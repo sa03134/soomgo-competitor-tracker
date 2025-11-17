@@ -10,7 +10,15 @@ let weekOffset = 0; // 0=최근 7일, -1=이전 7일
 let statsMonthOffset = 0; // 0=현재 표시 월, -1=이전 달
 
 // 초기화
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // 항상 GitHub에서 최신 데이터 가져오기 (조용히)
+  try {
+    await syncFromGithub();
+    console.log('✅ GitHub 동기화 완료');
+  } catch (error) {
+    console.log('⚠️ GitHub 동기화 실패:', error.message);
+  }
+  
   loadData();
   setupEvents();
   loadSettings();
@@ -27,22 +35,22 @@ async function loadSettings() {
 
 // 이벤트 설정
 function setupEvents() {
-  // 수집 버튼
+  // 수집 버튼 - GitHub에서 최신 데이터 가져오기
   document.getElementById('collectNowBtn').addEventListener('click', async () => {
     const btn = document.getElementById('collectNowBtn');
-    btn.textContent = '수집 중...';
+    btn.textContent = '가져오는 중...';
     btn.disabled = true;
     
-    chrome.runtime.sendMessage({ action: 'collectNow' }, () => {
-      setTimeout(() => {
-        btn.textContent = '완료!';
-        setTimeout(() => {
-          btn.textContent = '지금 수집';
-          btn.disabled = false;
-          loadData();
-        }, 1000);
-      }, 2000);
-    });
+    try {
+      await syncFromGithub();
+      showToast('✅ 최신 데이터를 가져왔습니다!');
+      loadData();
+    } catch (error) {
+      showToast('❌ 데이터 가져오기 실패: ' + error.message);
+    } finally {
+      btn.textContent = '지금 수집';
+      btn.disabled = false;
+    }
   });
 
   // 설정 버튼
@@ -59,10 +67,10 @@ function setupEvents() {
     
     try {
       await syncFromGithub();
-      alert('✅ GitHub에서 데이터를 가져왔습니다!');
+      showToast('✅ GitHub에서 데이터를 가져왔습니다!');
       loadData(); // 화면 새로고침
     } catch (error) {
-      alert('❌ 동기화 실패: ' + error.message);
+      showToast('❌ 동기화 실패: ' + error.message);
     } finally {
       btn.classList.remove('loading');
       btn.disabled = false;
@@ -492,14 +500,164 @@ async function renderCalendar(compId) {
       }
     }
     
+    // 날짜 클릭 이벤트
+    dayEl.style.cursor = todayData ? 'pointer' : 'default';
+    if (todayData) {
+      dayEl.addEventListener('click', () => {
+        showDateDetail(compId, dateStr, todayData, data);
+      });
+    }
+    
     calEl.appendChild(dayEl);
   }
 }
 
+// 토스트 알림
+function showToast(message) {
+  const existingToast = document.querySelector('.toast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => toast.classList.add('show'), 10);
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 2000);
+}
+
+// 날짜 상세 모달 표시
+async function showDateDetail(compId, dateStr, dayData, allData) {
+  const modal = document.getElementById('dateDetailModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalBody = document.getElementById('modalBody');
+  
+  // 제목 설정
+  const date = new Date(dateStr);
+  const dateText = `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  modalTitle.textContent = `${dateText} 상세`;
+  
+  // 모든 경쟁사 데이터 가져오기
+  const allCompData = await chrome.storage.local.get(competitors.map(c => c.id));
+  
+  // 모달 내용 생성
+  let html = '';
+  
+  for (const comp of competitors) {
+    const compData = allCompData[comp.id] || {};
+    const thisDay = compData[dateStr];
+    
+    if (!thisDay) continue;
+    
+    // 이전 날짜 찾기
+    const dates = Object.keys(compData).sort();
+    const idx = dates.indexOf(dateStr);
+    const prevDay = idx > 0 ? compData[dates[idx - 1]] : null;
+    
+    const hChange = prevDay ? thisDay.hirings - prevDay.hirings : 0;
+    const rChange = prevDay ? thisDay.reviews - prevDay.reviews : 0;
+    
+    const isPass = comp.id === 'passcoach';
+    
+    html += `
+      <div class="competitor-detail">
+        <div class="competitor-name ${isPass ? 'highlight' : ''}">
+          ${comp.name}
+          ${isPass ? '<span class="my-badge">MY</span>' : ''}
+        </div>
+        
+        <div class="day-summary">
+          <div class="summary-item">
+            <div class="summary-label">고용</div>
+            <div class="summary-value">${thisDay.hirings}</div>
+            ${hChange !== 0 ? `<div class="summary-change ${hChange > 0 ? 'positive' : 'negative'}">${hChange > 0 ? '+' : ''}${hChange}</div>` : ''}
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">리뷰</div>
+            <div class="summary-value">${thisDay.reviews}</div>
+            ${rChange !== 0 ? `<div class="summary-change ${rChange > 0 ? 'positive' : 'negative'}">${rChange > 0 ? '+' : ''}${rChange}</div>` : ''}
+          </div>
+        </div>
+        
+        ${thisDay.hourly ? generateHourlyTimeline(thisDay.hourly) : '<div class="no-hourly-data">시간대별 데이터가 없습니다</div>'}
+      </div>
+    `;
+  }
+  
+  modalBody.innerHTML = html;
+  modal.classList.remove('hidden');
+}
+
+// 시간대별 타임라인 생성
+function generateHourlyTimeline(hourlyData) {
+  const times = Object.keys(hourlyData).sort();
+  
+  if (times.length === 0) {
+    return '<div class="no-hourly-data">시간대별 데이터가 없습니다</div>';
+  }
+  
+  let html = '<div class="hourly-timeline"><div class="timeline-header">시간대별 변화</div>';
+  
+  for (let i = 0; i < times.length; i++) {
+    const time = times[i];
+    const data = hourlyData[time];
+    const prevData = i > 0 ? hourlyData[times[i - 1]] : null;
+    
+    const hChange = prevData ? data.hirings - prevData.hirings : 0;
+    const rChange = prevData ? data.reviews - prevData.reviews : 0;
+    const totalChange = hChange + rChange;
+    
+    html += `
+      <div class="timeline-item">
+        <div class="timeline-time">${time}</div>
+        <div class="timeline-stats">
+          <div class="timeline-stat">
+            <span class="timeline-label">고용</span>
+            <span class="timeline-value">${data.hirings}</span>
+          </div>
+          <div class="timeline-stat">
+            <span class="timeline-label">리뷰</span>
+            <span class="timeline-value">${data.reviews}</span>
+          </div>
+        </div>
+        ${totalChange !== 0 ? `<div class="timeline-change ${totalChange > 0 ? 'positive' : 'negative'}">${totalChange > 0 ? '+' : ''}${hChange}/${totalChange > 0 ? '+' : ''}${rChange}</div>` : ''}
+      </div>
+    `;
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+// 모달 닫기
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('dateDetailModal');
+  const modalClose = document.getElementById('modalClose');
+  
+  if (modalClose) {
+    modalClose.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+  }
+  
+  // 모달 배경 클릭 시 닫기
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.add('hidden');
+    }
+  });
+});
+
 // GitHub에서 데이터 가져오기
 async function syncFromGithub() {
   // ⚠️ GitHub 저장소 URL (본인 것으로 변경)
-  const GITHUB_BASE = 'https://raw.githubusercontent.com/sa03134/soomgo-competitor-tracker/main/collected_data';
+  const GITHUB_BASE = 'https://raw.githubusercontent.com/wst2024/soomgo-competitor-tracker/main/collected_data';
   
   const competitors = ['soncoach', 'seoulcoach', 'passcoach'];
   
