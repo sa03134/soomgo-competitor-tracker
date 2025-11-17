@@ -1,70 +1,7 @@
 {
-  "2025-11-07": {
-    "hirings": 479,
-    "reviews": 189,
-    "rating": 5.0,
-    "timestamp": "2025-11-07T09:00:00Z"
-  },
-  "2025-11-08": {
-    "hirings": 483,
-    "reviews": 194,
-    "rating": 5.0,
-    "timestamp": "2025-11-08T09:00:00Z",
-    "hourly": {
-      "09:00": { "hirings": 480, "reviews": 190 },
-      "15:00": { "hirings": 483, "reviews": 194 }
-    }
-  },
-  "2025-11-09": {
-    "hirings": 490,
-    "reviews": 198,
-    "rating": 5.0,
-    "timestamp": "2025-11-09T09:00:00Z",
-    "hourly": {
-      "09:00": { "hirings": 485, "reviews": 195 },
-      "12:00": { "hirings": 488, "reviews": 197 },
-      "18:00": { "hirings": 490, "reviews": 198 }
-    }
-  },
-  "2025-11-10": {
-    "hirings": 494,
-    "reviews": 202,
-    "rating": 5.0,
-    "timestamp": "2025-11-10T09:00:00Z"
-  },
-  "2025-11-11": {
-    "hirings": 498,
-    "reviews": 203,
-    "rating": 5.0,
-    "timestamp": "2025-11-11T09:00:00Z"
-  },
-  "2025-11-12": {
-    "hirings": 507,
-    "reviews": 205,
-    "rating": 5.0,
-    "timestamp": "2025-11-12T09:00:00Z",
-    "hourly": {
-      "09:00": { "hirings": 500, "reviews": 203 },
-      "13:00": { "hirings": 505, "reviews": 204 },
-      "16:00": { "hirings": 507, "reviews": 205 }
-    }
-  },
-  "2025-11-13": {
-    "hirings": 507,
-    "reviews": 205,
-    "rating": 5.0,
-    "timestamp": "2025-11-13T03:03:00Z"
-  },
-  "2025-11-16": {
-    "hirings": 520,
-    "reviews": 206,
-    "rating": 5.0,
-    "timestamp": "2025-11-16T09:00:00Z"
-  },
   "2025-11-17": {
     "hirings": 525,
     "reviews": 207,
-    "rating": 5.0,
-    "timestamp": "2025-11-17T09:00:00Z"
+    "timestamp": "2025-11-17T15:17:26.514154"
   }
 }
