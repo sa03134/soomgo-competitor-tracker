@@ -1,5 +1,5 @@
 """
-숨고 경쟁사 분석 - 초고속 버전
+숨고 경쟁사 분석 - 안정적 버전
 """
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -36,43 +36,95 @@ class SoomgoSeleniumCollector:
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
         options.add_argument('--disable-images')
-        options.add_argument('--disable-javascript')  # JS 비활성화 (더 빠름)
-        options.page_load_strategy = 'none'  # 최대 속도
         
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
-        driver.set_page_load_timeout(10)
+        driver.set_page_load_timeout(30)
         return driver
     
     def extract_data_from_page(self, driver):
-        # 간단하게 3초만 대기
-        time.sleep(3)
+        time.sleep(5)
         
         hirings = 0
         reviews = 0
         rating = 0.0
         
         try:
-            page_text = driver.find_element(By.TAG_NAME, 'body').text
+            # 고용수
+            hiring_selectors = [
+                "div.statistics-info > div:first-of-type div.statistics-info-item-contents",
+                "div.statistics-info-item-contents"
+            ]
             
-            # 정규식으로 한방에 추출
-            hiring_match = re.search(r'고용\s*(\d+)', page_text)
-            if hiring_match:
-                hirings = int(hiring_match.group(1))
+            for selector in hiring_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        text = elements[0].text.replace(',', '').strip()
+                        numbers = re.findall(r'\d+', text)
+                        if numbers:
+                            hirings = int(numbers[0])
+                            break
+                except:
+                    continue
             
-            review_match = re.search(r'\((\d+)\)', page_text)
-            if review_match:
-                reviews = int(review_match.group(1))
+            # 리뷰수
+            review_selectors = [
+                "div.review-info span.count",
+                "span.count"
+            ]
             
-            rating_match = re.search(r'(\d\.\d)', page_text)
-            if rating_match:
-                rating = float(rating_match.group(1))
+            for selector in review_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        text = elements[0].text.replace(',', '').strip()
+                        numbers = re.findall(r'\d+', text)
+                        if numbers:
+                            reviews = int(numbers[0])
+                            break
+                except:
+                    continue
             
-            print(f"  ✅ 고용 {hirings}, 리뷰 {reviews}, 평점 {rating}")
+            # 평점
+            rating_selectors = [
+                "div.review-info span.rate",
+                "span.rate"
+            ]
             
-        except:
-            pass
+            for selector in rating_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        text = elements[0].text.strip()
+                        rating_match = re.search(r'(\d+\.?\d*)', text)
+                        if rating_match:
+                            rating = float(rating_match.group(1))
+                            break
+                except:
+                    continue
+            
+        except Exception as e:
+            print(f"선택자 오류: {e}")
         
+        # 백업
+        if hirings == 0 or reviews == 0:
+            try:
+                page_text = driver.find_element(By.TAG_NAME, 'body').text
+                
+                if hirings == 0:
+                    hiring_match = re.search(r'고용\s*(\d+)', page_text)
+                    if hiring_match:
+                        hirings = int(hiring_match.group(1))
+                
+                if reviews == 0:
+                    review_match = re.search(r'\((\d+)\)', page_text)
+                    if review_match:
+                        reviews = int(review_match.group(1))
+            except:
+                pass
+        
+        print(f"  고용 {hirings}, 리뷰 {reviews}, 평점 {rating}")
         return hirings, reviews, rating
     
     def collect_competitor_data(self, driver, competitor_id):
@@ -89,7 +141,8 @@ class SoomgoSeleniumCollector:
             driver.get(url)
             hirings, reviews, rating = self.extract_data_from_page(driver)
             
-            if hirings == 0:
+            if hirings == 0 and reviews == 0:
+                print(f"  ⚠️ 데이터 없음")
                 return None
             
             return {
@@ -99,7 +152,8 @@ class SoomgoSeleniumCollector:
                 'timestamp': datetime.now().isoformat(),
                 'date': datetime.now().strftime('%Y-%m-%d')
             }
-        except:
+        except Exception as e:
+            print(f"  ❌ 오류: {e}")
             return None
     
     def save_data(self, competitor_id, data):
@@ -139,6 +193,7 @@ class SoomgoSeleniumCollector:
                 data = self.collect_competitor_data(driver, competitor_id)
                 if data:
                     self.save_data(competitor_id, data)
+                time.sleep(1)
             print(f"✅ 완료")
         finally:
             driver.quit()
