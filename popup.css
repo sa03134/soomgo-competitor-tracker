@@ -6,8 +6,10 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-  width: 680px;
-  height: 510px;
+  width: 800px;
+  min-width: 800px;
+  height: 600px;
+  min-height: 600px;
   background: #ffffff;
   overflow: hidden;
 }
@@ -221,12 +223,23 @@ h1 {
   border-radius: 6px;
   color: #666;
   border: 1px solid #e5e5e5;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.qs:hover {
+  background: #f5f5f5;
+  transform: scale(1.05);
 }
 
 .qs.highlight {
   background: rgba(108, 60, 242, 0.08);
   color: #6C3CF2;
   border-color: rgba(108, 60, 242, 0.25);
+}
+
+.qs.highlight:hover {
+  background: rgba(108, 60, 242, 0.15);
 }
 
 /* 캘린더 */
@@ -237,6 +250,7 @@ h1 {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   overflow-y: auto;
+  min-height: 510px;
 }
 
 .cal-wrap {
@@ -264,6 +278,12 @@ h1 {
   justify-content: center;
   gap: 3px;
   flex-wrap: wrap;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.cal-header:hover {
+  color: #6C3CF2;
 }
 
 .calendar {

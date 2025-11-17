@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "숨고 경쟁사 분석기",
-  "version": "5.0.0",
+  "version": "10.2.0",
   "description": "숨고 플랫폼의 경쟁사 프로필 데이터를 자동으로 수집하고 분석합니다.",
   "permissions": [
     "storage",
