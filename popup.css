@@ -841,3 +841,31 @@ h1 {
   font-size: 9px;
   margin-left: auto;
 }
+
+/* MVP Day - 가장 많이 증가한 날 */
+.calendar-day.mvp-day {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
+  border-color: #FFD700 !important;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  animation: mvp-glow 2s ease-in-out infinite;
+}
+
+.calendar-day.mvp-day .day-num {
+  color: #1a1a1a;
+  font-weight: 800;
+}
+
+.calendar-day.mvp-day .h-change {
+  background: rgba(0, 0, 0, 0.1);
+  color: #1a1a1a;
+  font-weight: 900;
+}
+
+@keyframes mvp-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.9);
+  }
+}

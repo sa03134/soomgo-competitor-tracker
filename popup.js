@@ -114,6 +114,44 @@ async function renderCalendar(compId) {
         dayEl.classList.add('has-hiring');
       }
       
+      // MVP 체크 (그날 가장 많이 증가한 고수)
+      let isMVP = false;
+      if (hChange > 0) {
+        // 다른 경쟁자들의 같은 날 증가량 확인
+        const sonData = await chrome.storage.local.get(['soncoach']);
+        const seoulData = await chrome.storage.local.get(['seoulcoach']);
+        
+        const sonDayData = sonData.soncoach?.[dateStr];
+        const seoulDayData = seoulData.seoulcoach?.[dateStr];
+        
+        const sonPrevData = sonData.soncoach?.[prevDateStr];
+        const seoulPrevData = seoulData.seoulcoach?.[prevDateStr];
+        
+        const sonChange = (sonDayData && sonPrevData) ? sonDayData.hirings - sonPrevData.hirings : 0;
+        const seoulChange = (seoulDayData && seoulPrevData) ? seoulDayData.hirings - seoulPrevData.hirings : 0;
+        
+        // 패스가 1등이면 MVP
+        if (compId === 'passcoach' && hChange > sonChange && hChange > seoulChange) {
+          isMVP = true;
+        } else if (compId === 'soncoach' && hChange > seoulChange) {
+          const passData = await chrome.storage.local.get(['passcoach']);
+          const passDayData = passData.passcoach?.[dateStr];
+          const passPrevData = passData.passcoach?.[prevDateStr];
+          const passChange = (passDayData && passPrevData) ? passDayData.hirings - passPrevData.hirings : 0;
+          if (hChange > passChange) isMVP = true;
+        } else if (compId === 'seoulcoach' && hChange > sonChange) {
+          const passData = await chrome.storage.local.get(['passcoach']);
+          const passDayData = passData.passcoach?.[dateStr];
+          const passPrevData = passData.passcoach?.[prevDateStr];
+          const passChange = (passDayData && passPrevData) ? passDayData.hirings - passPrevData.hirings : 0;
+          if (hChange > passChange) isMVP = true;
+        }
+      }
+      
+      if (isMVP) {
+        dayEl.classList.add('mvp-day');
+      }
+      
       dayEl.innerHTML = `
         <div class="day-num">${date}</div>
         ${hChange !== 0 || rChange !== 0 ? `
@@ -303,13 +341,16 @@ function hideTooltip() {
   }
 }
 
-// 연속 고용 (하루라도 데이터 없으면 리셋)
+// 연속 고용 (연속된 날짜만 카운트)
 async function updateStreak() {
   const result = await chrome.storage.local.get(['passcoach']);
   const data = result.passcoach || {};
   
   const dates = Object.keys(data).sort(); // 오래된 순
   if (dates.length === 0) return;
+  
+  console.log('=== Streak 계산 시작 ===');
+  console.log('전체 날짜:', dates);
   
   let streak = 0;
   
@@ -326,28 +367,29 @@ async function updateStreak() {
     const yesterday = new Date(yesterdayStr);
     const dayDiff = Math.floor((today - yesterday) / (1000 * 60 * 60 * 24));
     
-    // 1일보다 크면 공백 있음 → 중단
-    if (dayDiff > 1) {
-      break;
-    }
+    console.log(`${todayStr}(${todayData.hirings}) vs ${yesterdayStr}(${yesterdayData.hirings}): 간격 ${dayDiff}일`);
     
-    // 고용 증가 확인
-    if (todayData.hirings > yesterdayData.hirings) {
+    // 연속된 날짜이고 고용 증가
+    if (dayDiff === 1 && todayData.hirings > yesterdayData.hirings) {
       streak++;
-    } else if (todayData.hirings === yesterdayData.hirings) {
-      // 같으면 계속 (리뷰만 증가한 경우)
-      continue;
-    } else {
-      // 감소하면 중단
+      console.log(`  ✅ Streak +1 = ${streak}`);
+    } else if (dayDiff > 1) {
+      console.log(`  ❌ 날짜 건너뛰기 (${dayDiff}일 간격)`);
+      break;
+    } else if (todayData.hirings <= yesterdayData.hirings) {
+      console.log(`  ❌ 고용 증가 없음`);
       break;
     }
   }
+  
+  console.log(`최종 Streak: ${streak}일`);
   
   const streakEl = document.getElementById('streak');
   if (streakEl) {
     streakEl.textContent = streak > 0 ? `🔥 ${streak}일` : '';
   }
 }
+
 // 빠른 통계
 async function updateQuickStats() {
   for (const comp of competitors) {
