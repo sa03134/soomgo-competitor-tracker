@@ -303,7 +303,7 @@ function hideTooltip() {
   }
 }
 
-// 연속 고용 (오늘 기준)
+// 연속 고용 (오늘 기준, 하루라도 끊기면 리셋)
 async function updateStreak() {
   const result = await chrome.storage.local.get(['passcoach']);
   const data = result.passcoach || {};
@@ -311,21 +311,27 @@ async function updateStreak() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const dates = Object.keys(data).sort().reverse();
+  const dates = Object.keys(data).sort();
   let streak = 0;
+  let checkDate = new Date(today);
   
-  for (let i = 0; i < dates.length - 1; i++) {
-    const currentDate = new Date(dates[i]);
-    currentDate.setHours(0, 0, 0, 0);
+  // 오늘부터 거꾸로 확인
+  for (let i = 0; i < dates.length; i++) {
+    const dateStr = checkDate.toISOString().split('T')[0];
+    const todayData = data[dateStr];
     
-    // 오늘 이후 날짜는 건너뛰기
-    if (currentDate > today) continue;
+    if (!todayData) break;
     
-    const todayData = data[dates[i]];
-    const yesterdayData = data[dates[i + 1]];
+    // 어제 데이터
+    const yesterday = new Date(checkDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayData = data[yesterdayStr];
     
-    if (todayData && yesterdayData && todayData.hirings > yesterdayData.hirings) {
+    // 고용 증가 확인
+    if (yesterdayData && todayData.hirings > yesterdayData.hirings) {
       streak++;
+      checkDate = yesterday;
     } else {
       break;
     }
@@ -352,7 +358,8 @@ async function updateQuickStats() {
     if (!qsEl) continue;
     
     if (todayData) {
-      qsEl.textContent = `${comp.name} ${todayData.hirings}/${todayData.reviews}`;
+      const rating = todayData.rating ? ` ⭐${todayData.rating}` : '';
+      qsEl.textContent = `${comp.name} ${todayData.hirings}/${todayData.reviews}${rating}`;
     } else {
       qsEl.textContent = `${comp.name} -/-`;
     }
