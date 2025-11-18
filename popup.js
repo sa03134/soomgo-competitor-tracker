@@ -114,44 +114,6 @@ async function renderCalendar(compId) {
         dayEl.classList.add('has-hiring');
       }
       
-      // MVP 체크 (그날 가장 많이 증가한 고수)
-      let isMVP = false;
-      if (hChange > 0 && todayData && prevData) {
-        // 다른 경쟁자들의 같은 날 증가량 확인
-        const sonData = await chrome.storage.local.get(['soncoach']);
-        const seoulData = await chrome.storage.local.get(['seoulcoach']);
-        
-        const sonDayData = sonData.soncoach?.[dateStr];
-        const seoulDayData = seoulData.seoulcoach?.[dateStr];
-        
-        const sonPrevData = sonData.soncoach?.[prevDateStr];
-        const seoulPrevData = seoulData.seoulcoach?.[prevDateStr];
-        
-        const sonChange = (sonDayData && sonPrevData) ? sonDayData.hirings - sonPrevData.hirings : 0;
-        const seoulChange = (seoulDayData && seoulPrevData) ? seoulDayData.hirings - seoulPrevData.hirings : 0;
-        
-        // 패스가 1등이면 MVP
-        if (compId === 'passcoach' && hChange > sonChange && hChange > seoulChange) {
-          isMVP = true;
-        } else if (compId === 'soncoach' && hChange > seoulChange) {
-          const passData = await chrome.storage.local.get(['passcoach']);
-          const passDayData = passData.passcoach?.[dateStr];
-          const passPrevData = passData.passcoach?.[prevDateStr];
-          const passChange = (passDayData && passPrevData) ? passDayData.hirings - passPrevData.hirings : 0;
-          if (hChange > passChange) isMVP = true;
-        } else if (compId === 'seoulcoach' && hChange > sonChange) {
-          const passData = await chrome.storage.local.get(['passcoach']);
-          const passDayData = passData.passcoach?.[dateStr];
-          const passPrevData = passData.passcoach?.[prevDateStr];
-          const passChange = (passDayData && passPrevData) ? passDayData.hirings - passPrevData.hirings : 0;
-          if (hChange > passChange) isMVP = true;
-        }
-      }
-      
-      if (isMVP) {
-        dayEl.classList.add('mvp-day');
-      }
-      
       dayEl.innerHTML = `
         <div class="day-num">${date}</div>
         ${hChange !== 0 || rChange !== 0 ? `
