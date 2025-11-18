@@ -1,5 +1,5 @@
 """
-숨고 경쟁사 분석 - 정규식 전용
+숨고 경쟁사 분석 - 쉼표 지원
 """
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -51,16 +51,16 @@ class SoomgoSeleniumCollector:
         try:
             page_text = driver.find_element(By.TAG_NAME, 'body').text
             
-            # 고용수
+            # 고용수 (쉼표 포함)
             hiring_patterns = [
-                r'(\d{1,4})\s*회',
-                r'고용\s*(\d{1,4})',
+                r'(\d{1,4}(?:,\d{3})*)\s*회',  # "1,013회"
+                r'고용\s*(\d{1,4}(?:,\d{3})*)',  # "고용 1,013"
             ]
             
             for pattern in hiring_patterns:
                 match = re.search(pattern, page_text)
                 if match:
-                    hirings = int(match.group(1))
+                    hirings = int(match.group(1).replace(',', ''))
                     print(f"  ✅ 고용: {hirings}")
                     break
             
