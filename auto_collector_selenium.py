@@ -1,5 +1,5 @@
 """
-숨고 경쟁사 분석 - 쉼표 지원
+숨고 경쟁사 분석 - 디버깅 강화
 """
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -51,10 +51,13 @@ class SoomgoSeleniumCollector:
         try:
             page_text = driver.find_element(By.TAG_NAME, 'body').text
             
-            # 고용수 (쉼표 포함)
+            print(f"  페이지 텍스트 샘플: {page_text[:200]}")
+            
+            # 고용수
             hiring_patterns = [
-                r'(\d{1,4}(?:,\d{3})*)\s*회',  # "1,013회"
-                r'고용\s*(\d{1,4}(?:,\d{3})*)',  # "고용 1,013"
+                r'고용\s*[\n\r\s]*(\d{1,4}(?:,\d{3})*)\s*회',
+                r'(\d{1,4}(?:,\d{3})*)\s*회',
+                r'고용\s*(\d{1,4}(?:,\d{3})*)',
             ]
             
             for pattern in hiring_patterns:
@@ -64,10 +67,13 @@ class SoomgoSeleniumCollector:
                     print(f"  ✅ 고용: {hirings}")
                     break
             
+            if hirings == 0:
+                print(f"  ⚠️ 고용수 추출 실패")
+            
             # 리뷰수
             review_patterns = [
                 r'\((\d{1,4})\)',
-                r'리뷰\s*(\d{1,4})',
+                r'리뷰\s*[\n\r\s]*(\d{1,4})',
             ]
             
             for pattern in review_patterns:
@@ -77,10 +83,13 @@ class SoomgoSeleniumCollector:
                     print(f"  ✅ 리뷰: {reviews}")
                     break
             
+            if reviews == 0:
+                print(f"  ⚠️ 리뷰수 추출 실패")
+            
             # 평점
             rating_patterns = [
                 r'(\d\.\d)',
-                r'평점\s*(\d\.\d)',
+                r'평점\s*[\n\r\s]*(\d\.\d)',
             ]
             
             for pattern in rating_patterns:
