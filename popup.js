@@ -118,8 +118,8 @@ async function renderCalendar(compId) {
         <div class="day-num">${date}</div>
         ${hChange !== 0 || rChange !== 0 ? `
           <div class="day-data">
-            <span class="h-change ${hChange < 0 ? 'neg' : ''}">${hChange > 0 ? '+' : ''}${hChange}</span>
-            <span class="r-change ${rChange < 0 ? 'neg' : ''}">${rChange > 0 ? '+' : ''}${rChange}</span>
+            <span class="h-change ${hChange < 0 ? 'neg' : ''}">${hChange < 0 ? '' : ''}${hChange}</span>
+            <span class="r-change ${rChange < 0 ? 'neg' : ''}">${rChange < 0 ? '' : ''}${rChange}</span>
           </div>
         ` : ''}
       `;
@@ -162,7 +162,7 @@ function updateCalendarHeader(compId, comp) {
   if (headerEl && headerEl.classList.contains('cal-header')) {
     headerEl.style.cursor = 'pointer';
     headerEl.onclick = () => {
-      window.open(comp.url, '_blank');
+      chrome.tabs.create({ url: comp.url });
     };
   }
 }
@@ -303,39 +303,48 @@ function hideTooltip() {
   }
 }
 
-// 연속 고용 (오늘 기준, 하루라도 끊기면 리셋)
+// 연속 고용 (연속된 날짜만 카운트)
 async function updateStreak() {
   const result = await chrome.storage.local.get(['passcoach']);
   const data = result.passcoach || {};
   
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const dates = Object.keys(data).sort(); // 오래된 순
+  if (dates.length === 0) return;
   
-  const dates = Object.keys(data).sort();
+  console.log('=== Streak 계산 시작 ===');
+  console.log('전체 날짜:', dates);
+  
   let streak = 0;
-  let checkDate = new Date(today);
   
-  // 오늘부터 거꾸로 확인
-  for (let i = 0; i < dates.length; i++) {
-    const dateStr = checkDate.toISOString().split('T')[0];
-    const todayData = data[dateStr];
+  // 뒤에서부터 (최신부터) 확인
+  for (let i = dates.length - 1; i > 0; i--) {
+    const todayStr = dates[i];
+    const yesterdayStr = dates[i - 1];
     
-    if (!todayData) break;
-    
-    // 어제 데이터
-    const yesterday = new Date(checkDate);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const todayData = data[todayStr];
     const yesterdayData = data[yesterdayStr];
     
-    // 고용 증가 확인
-    if (yesterdayData && todayData.hirings > yesterdayData.hirings) {
+    // 날짜 간격 확인
+    const today = new Date(todayStr);
+    const yesterday = new Date(yesterdayStr);
+    const dayDiff = Math.floor((today - yesterday) / (1000 * 60 * 60 * 24));
+    
+    console.log(`${todayStr}(${todayData.hirings}) vs ${yesterdayStr}(${yesterdayData.hirings}): 간격 ${dayDiff}일`);
+    
+    // 연속된 날짜이고 고용 증가
+    if (dayDiff === 1 && todayData.hirings > yesterdayData.hirings) {
       streak++;
-      checkDate = yesterday;
-    } else {
+      console.log(`  ✅ Streak +1 = ${streak}`);
+    } else if (dayDiff > 1) {
+      console.log(`  ❌ 날짜 건너뛰기 (${dayDiff}일 간격)`);
+      break;
+    } else if (todayData.hirings <= yesterdayData.hirings) {
+      console.log(`  ❌ 고용 증가 없음`);
       break;
     }
   }
+  
+  console.log(`최종 Streak: ${streak}일`);
   
   const streakEl = document.getElementById('streak');
   if (streakEl) {
@@ -557,5 +566,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentStatMonth.setMonth(currentStatMonth.getMonth() + 1);
     updateStatsMonth();
     updateNavButtons();
+  });
+  
+  // Quick Stats 클릭
+  document.getElementById('qs-son')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://soomgo.com/profile/users/16756708' });
+  });
+  
+  document.getElementById('qs-seoul')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://soomgo.com/profile/users/3379598' });
+  });
+  
+  document.getElementById('qs-pass')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://soomgo.com/profile/users/11571181' });
   });
 });
