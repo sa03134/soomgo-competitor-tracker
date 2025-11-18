@@ -303,16 +303,13 @@ function hideTooltip() {
   }
 }
 
-// 연속 고용 (연속된 날짜만 카운트)
+// 연속 고용 (하루라도 데이터 없으면 리셋)
 async function updateStreak() {
   const result = await chrome.storage.local.get(['passcoach']);
   const data = result.passcoach || {};
   
   const dates = Object.keys(data).sort(); // 오래된 순
   if (dates.length === 0) return;
-  
-  console.log('=== Streak 계산 시작 ===');
-  console.log('전체 날짜:', dates);
   
   let streak = 0;
   
@@ -329,29 +326,28 @@ async function updateStreak() {
     const yesterday = new Date(yesterdayStr);
     const dayDiff = Math.floor((today - yesterday) / (1000 * 60 * 60 * 24));
     
-    console.log(`${todayStr}(${todayData.hirings}) vs ${yesterdayStr}(${yesterdayData.hirings}): 간격 ${dayDiff}일`);
-    
-    // 연속된 날짜이고 고용 증가
-    if (dayDiff === 1 && todayData.hirings > yesterdayData.hirings) {
-      streak++;
-      console.log(`  ✅ Streak +1 = ${streak}`);
-    } else if (dayDiff > 1) {
-      console.log(`  ❌ 날짜 건너뛰기 (${dayDiff}일 간격)`);
+    // 1일보다 크면 공백 있음 → 중단
+    if (dayDiff > 1) {
       break;
-    } else if (todayData.hirings <= yesterdayData.hirings) {
-      console.log(`  ❌ 고용 증가 없음`);
+    }
+    
+    // 고용 증가 확인
+    if (todayData.hirings > yesterdayData.hirings) {
+      streak++;
+    } else if (todayData.hirings === yesterdayData.hirings) {
+      // 같으면 계속 (리뷰만 증가한 경우)
+      continue;
+    } else {
+      // 감소하면 중단
       break;
     }
   }
-  
-  console.log(`최종 Streak: ${streak}일`);
   
   const streakEl = document.getElementById('streak');
   if (streakEl) {
     streakEl.textContent = streak > 0 ? `🔥 ${streak}일` : '';
   }
 }
-
 // 빠른 통계
 async function updateQuickStats() {
   for (const comp of competitors) {
