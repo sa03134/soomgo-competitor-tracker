@@ -116,7 +116,7 @@ async function renderCalendar(compId) {
       
       // MVP 체크 (그날 가장 많이 증가한 고수)
       let isMVP = false;
-      if (hChange > 0) {
+      if (hChange > 0 && todayData && prevData) {
         // 다른 경쟁자들의 같은 날 증가량 확인
         const sonData = await chrome.storage.local.get(['soncoach']);
         const seoulData = await chrome.storage.local.get(['seoulcoach']);
