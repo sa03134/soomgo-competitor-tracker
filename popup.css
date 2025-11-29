@@ -256,7 +256,7 @@ h1 {
 .cal-wrap {
   background: #fafafa;
   border-radius: 6px;
-  padding: 6px;
+  padding: 4px 6px 6px 6px;
   border: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
@@ -271,7 +271,7 @@ h1 {
   font-size: 10px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   text-align: center;
   display: flex;
   align-items: center;
@@ -329,7 +329,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  grid-auto-rows: 38px;
+  grid-template-rows: 12px repeat(auto-fill, 38px);
 }
 
 .cal-header-day {
@@ -337,8 +337,8 @@ h1 {
   font-size: 8px;
   font-weight: 600;
   color: #999;
-  padding: 2px 0;
-  height: 20px;
+  padding: 0;
+  height: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -483,7 +483,7 @@ h1 {
 
 .stats-table {
   width: 100%;
-  font-size: 10px;
+  font-size: 9px;
   border-collapse: collapse;
 }
 
@@ -493,21 +493,21 @@ h1 {
   font-weight: 500;
   color: #666;
   border-bottom: 1px solid #e5e5e5;
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .stats-table td {
   padding: 2px;
   text-align: center;
   color: #1a1a1a;
-  font-size: 10px;
+  font-size: 9px;
   vertical-align: middle;
 }
 
 .stat-name {
   font-weight: 500;
   text-align: left;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .stat-highlight {
@@ -1016,4 +1016,15 @@ h1 {
 .mission-stat span {
   font-weight: 700;
   color: #fbbf24;
+}
+
+/* 오늘 날짜 강조 */
+.cal-day.today {
+  border: 2px solid #6C3CF2;
+  box-shadow: 0 0 8px rgba(108, 60, 242, 0.3);
+}
+
+.cal-day.today .day-num {
+  color: #6C3CF2;
+  font-weight: 700;
 }

@@ -106,6 +106,15 @@ async function renderCalendar(compId) {
     const dayEl = document.createElement('div');
     dayEl.className = 'cal-day';
     
+    // 오늘 날짜 강조
+    const today = new Date();
+    const isToday = today.getFullYear() === year && 
+                    today.getMonth() === month && 
+                    today.getDate() === date;
+    if (isToday) {
+      dayEl.classList.add('today');
+    }
+    
     if (todayData) {
       const hChange = prevData ? todayData.hirings - prevData.hirings : 0;
       const rChange = prevData ? todayData.reviews - prevData.reviews : 0;
@@ -388,19 +397,16 @@ async function updateStats7() {
   
   // 현재 월의 첫 번째 일요일 찾기
   const currentMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-  const firstDayOfWeek = currentMonthStart.getDay(); // 0 = 일요일
+  const firstDayOfWeek = currentMonthStart.getDay();
   
-  // 해당 월의 첫 번째 일요일
   let firstSunday = new Date(currentMonthStart);
   if (firstDayOfWeek !== 0) {
     firstSunday.setDate(currentMonthStart.getDate() - firstDayOfWeek);
   }
   
-  // offset을 이용한 주 시작일 계산
   const weekStart = new Date(firstSunday.getTime() + (currentWeekOffset * 7 * 24 * 60 * 60 * 1000));
   const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
   
-  // 주차 번호 계산
   const weekNumber = currentWeekOffset + 1;
   
   const weekRangeEl = document.getElementById('weekRange');
@@ -408,11 +414,13 @@ async function updateStats7() {
     weekRangeEl.textContent = `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
   }
   
-  // 주차 타이틀 업데이트
   const weekTitle = document.querySelector('.stat-title');
   if (weekTitle) {
     weekTitle.childNodes[0].textContent = `${weekNumber}주차 `;
   }
+  
+  // 모든 경쟁자 데이터 수집
+  const statsData = [];
   
   for (const comp of competitors) {
     const result = await chrome.storage.local.get([comp.id]);
@@ -422,12 +430,9 @@ async function updateStats7() {
     let totalR = 0;
     let daysWithData = 0;
     
-    // 해당 주의 7일 동안 데이터 수집
     for (let i = 0; i < 7; i++) {
       const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
-      
-      // 이전 날짜
       const prevDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
       const prevDateStr = prevDate.toISOString().split('T')[0];
       
@@ -444,16 +449,28 @@ async function updateStats7() {
     const avgH = daysWithData > 0 ? (totalH / daysWithData).toFixed(1) : '0.0';
     const avgR = daysWithData > 0 ? (totalR / daysWithData).toFixed(1) : '0.0';
     
+    statsData.push({ comp, totalH, totalR, avgH, avgR });
+  }
+  
+  // 1등 찾기
+  const maxH = Math.max(...statsData.map(s => s.totalH));
+  const maxR = Math.max(...statsData.map(s => s.totalR));
+  
+  // 테이블 렌더링
+  for (const stat of statsData) {
     const row = tbody.insertRow();
+    const isTopH = stat.totalH === maxH && maxH > 0;
+    const isTopR = stat.totalR === maxR && maxR > 0;
+    
     row.innerHTML = `
-      <td class="stat-name ${comp.isMine ? 'stat-highlight' : ''}">${comp.name}</td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
-        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgH}/일</div>
+      <td class="stat-name ${stat.comp.isMine ? 'stat-highlight' : ''}">${stat.comp.name}</td>
+      <td class="${stat.comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 10px; font-weight: 500; margin-bottom: 1px;">${stat.totalH > 0 ? '+' : ''}${stat.totalH} ${isTopH ? '🥇' : ''}</div>
+        <div style="font-size: 8px; color: #6C3CF2; font-weight: 500;">${stat.avgH}/일</div>
       </td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
-        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgR}/일</div>
+      <td class="${stat.comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 10px; font-weight: 500; margin-bottom: 1px;">${stat.totalR > 0 ? '+' : ''}${stat.totalR} ${isTopR ? '🥇' : ''}</div>
+        <div style="font-size: 8px; color: #6C3CF2; font-weight: 500;">${stat.avgR}/일</div>
       </td>
     `;
   }
@@ -471,6 +488,9 @@ async function updateStatsMonth() {
   if (titleEl) {
     titleEl.textContent = `${year}년 ${month + 1}월`;
   }
+  
+  // 모든 경쟁자 데이터 수집
+  const statsData = [];
   
   for (const comp of competitors) {
     const result = await chrome.storage.local.get([comp.id]);
@@ -497,16 +517,28 @@ async function updateStatsMonth() {
     const avgH = daysWithData > 0 ? (totalH / daysWithData).toFixed(1) : '0.0';
     const avgR = daysWithData > 0 ? (totalR / daysWithData).toFixed(1) : '0.0';
     
+    statsData.push({ comp, totalH, totalR, avgH, avgR });
+  }
+  
+  // 1등 찾기
+  const maxH = Math.max(...statsData.map(s => s.totalH));
+  const maxR = Math.max(...statsData.map(s => s.totalR));
+  
+  // 테이블 렌더링
+  for (const stat of statsData) {
     const row = tbody.insertRow();
+    const isTopH = stat.totalH === maxH && maxH > 0;
+    const isTopR = stat.totalR === maxR && maxR > 0;
+    
     row.innerHTML = `
-      <td class="stat-name ${comp.isMine ? 'stat-highlight' : ''}">${comp.name}</td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
-        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgH}/일</div>
+      <td class="stat-name ${stat.comp.isMine ? 'stat-highlight' : ''}">${stat.comp.name}</td>
+      <td class="${stat.comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 10px; font-weight: 500; margin-bottom: 1px;">${stat.totalH > 0 ? '+' : ''}${stat.totalH} ${isTopH ? '🥇' : ''}</div>
+        <div style="font-size: 8px; color: #6C3CF2; font-weight: 500;">${stat.avgH}/일</div>
       </td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
-        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgR}/일</div>
+      <td class="${stat.comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 10px; font-weight: 500; margin-bottom: 1px;">${stat.totalR > 0 ? '+' : ''}${stat.totalR} ${isTopR ? '🥇' : ''}</div>
+        <div style="font-size: 8px; color: #6C3CF2; font-weight: 500;">${stat.avgR}/일</div>
       </td>
     `;
   }
@@ -730,7 +762,6 @@ async function updateDailyMission() {
   
   if (todayData && yesterdayData) {
     const hChange = todayData.hirings - yesterdayData.hirings;
-    const rChange = todayData.reviews - yesterdayData.reviews;
     
     // 미션 1: 고용 1건
     const mission1 = document.getElementById('mission1');
@@ -739,7 +770,6 @@ async function updateDailyMission() {
       mission1.querySelector('.mission-icon').textContent = '✅';
       completed++;
       
-      // 완료 시간 표시 (시간대별 데이터가 있으면)
       if (todayData.hourly) {
         const hours = Object.keys(todayData.hourly).sort();
         for (const hour of hours) {
@@ -755,41 +785,32 @@ async function updateDailyMission() {
       }
     }
     
-    // 미션 2: 리뷰 1건
+    // 미션 2: 고용 2건
     const mission2 = document.getElementById('mission2');
-    if (rChange >= 1) {
+    if (hChange >= 2) {
       mission2.classList.add('completed');
       mission2.querySelector('.mission-icon').textContent = '✅';
       completed++;
-      
-      if (todayData.hourly) {
-        const hours = Object.keys(todayData.hourly).sort();
-        for (const hour of hours) {
-          const hourData = todayData.hourly[hour];
-          const prevHourIndex = hours.indexOf(hour) - 1;
-          const prevHourData = prevHourIndex >= 0 ? todayData.hourly[hours[prevHourIndex]] : yesterdayData;
-          
-          if (hourData.reviews > prevHourData.reviews) {
-            mission2.querySelector('.mission-time').textContent = `${hour} 완료`;
-            break;
-          }
-        }
-      }
-    }
-    
-    // 미션 3: 추가 고용 1건 (총 2건)
-    const mission3 = document.getElementById('mission3');
-    if (hChange >= 2) {
-      mission3.classList.add('completed');
-      mission3.querySelector('.mission-icon').textContent = '✅';
-      completed++;
     } else if (hChange >= 1) {
-      // 남은 시간 계산
       const now = new Date();
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59);
       const hoursLeft = Math.ceil((endOfDay - now) / (1000 * 60 * 60));
-      mission3.querySelector('.mission-time').textContent = `남은 시간 ${hoursLeft}h`;
+      mission2.querySelector('.mission-time').textContent = `남은 ${hoursLeft}h`;
+    }
+    
+    // 미션 3: 고용 3건
+    const mission3 = document.getElementById('mission3');
+    if (hChange >= 3) {
+      mission3.classList.add('completed');
+      mission3.querySelector('.mission-icon').textContent = '✅';
+      completed++;
+    } else if (hChange >= 2) {
+      const now = new Date();
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59);
+      const hoursLeft = Math.ceil((endOfDay - now) / (1000 * 60 * 60));
+      mission3.querySelector('.mission-time').textContent = `남은 ${hoursLeft}h`;
     }
   }
   
@@ -847,7 +868,7 @@ async function updateMissionStreak(data) {
   }
 }
 
-// 주간 성공
+// 주간 성공 (이번 주 월~오늘까지 고용 1건 이상 달성한 날 / 경과한 날)
 async function updateWeekSuccess(data) {
   const today = new Date();
   const dayOfWeek = today.getDay(); // 0 = 일요일
