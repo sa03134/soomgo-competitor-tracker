@@ -407,8 +407,7 @@ h1 {
 
 .h-change.neg,
 .r-change.neg {
-  background: rgba(239, 68, 68, 0.15);
-  color: #dc2626;
+  /* 음수도 일반 색상 유지 */
 }
 
 /* 통계 하단 */

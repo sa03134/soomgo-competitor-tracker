@@ -386,28 +386,22 @@ async function updateStats7() {
   if (!tbody) return;
   tbody.innerHTML = '';
   
-  // 오늘이 속한 주 계산
-  const today = new Date();
+  // 현재 월의 첫 번째 일요일 찾기
   const currentMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  const firstDayOfWeek = currentMonthStart.getDay(); // 0 = 일요일
   
-  // 오늘이 현재 표시 월에 속하면 오늘 주차, 아니면 첫 주
-  let weekStart;
-  if (today.getMonth() === currentMonth.getMonth() && today.getFullYear() === currentMonth.getFullYear()) {
-    // 오늘이 속한 주의 시작일 (일요일)
-    const dayOfWeek = today.getDay();
-    weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - dayOfWeek);
-  } else {
-    // 다른 월이면 offset 사용
-    const offset = currentWeekOffset * 7;
-    weekStart = new Date(currentMonthStart.getTime() + offset * 24 * 60 * 60 * 1000);
+  // 해당 월의 첫 번째 일요일
+  let firstSunday = new Date(currentMonthStart);
+  if (firstDayOfWeek !== 0) {
+    firstSunday.setDate(currentMonthStart.getDate() - firstDayOfWeek);
   }
   
+  // offset을 이용한 주 시작일 계산
+  const weekStart = new Date(firstSunday.getTime() + (currentWeekOffset * 7 * 24 * 60 * 60 * 1000));
   const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
   
-  // 주차 번호 계산 (해당 월에서 몇 번째 주인지)
-  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-  const weekNumber = Math.ceil((weekStart.getDate() + firstDayOfMonth.getDay()) / 7);
+  // 주차 번호 계산
+  const weekNumber = currentWeekOffset + 1;
   
   const weekRangeEl = document.getElementById('weekRange');
   if (weekRangeEl) {
@@ -536,9 +530,25 @@ function updateNavButtons() {
       currentMonth.getMonth() === today.getMonth();
   }
   
+  // 다음 주 버튼: 현재 주차보다 미래면 비활성화
+  const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  
+  // 이번 주 일요일
+  const todayWeekStart = new Date(today);
+  todayWeekStart.setDate(today.getDate() - today.getDay());
+  
+  // 이번 달 첫 번째 일요일
+  const firstDayOfWeek = monthStart.getDay();
+  const firstSunday = new Date(monthStart);
+  if (firstDayOfWeek !== 0) {
+    firstSunday.setDate(monthStart.getDate() - firstDayOfWeek);
+  }
+  
+  const maxWeekOffset = Math.floor((todayWeekStart - firstSunday) / (7 * 24 * 60 * 60 * 1000));
+  
   const nextWeekBtn = document.getElementById('nextWeekBtn');
   if (nextWeekBtn) {
-    nextWeekBtn.disabled = currentWeekOffset >= 0;
+    nextWeekBtn.disabled = currentWeekOffset >= maxWeekOffset;
   }
   
   const nextStatMonthBtn = document.getElementById('nextStatMonthBtn');
@@ -560,6 +570,25 @@ function updateLastUpdateTime() {
 
 // 전체 렌더링
 async function renderAll() {
+  // 초기 로드 시 오늘이 속한 주차로 설정
+  const today = new Date();
+  if (today.getMonth() === currentMonth.getMonth() && today.getFullYear() === currentMonth.getFullYear()) {
+    // 이번 주 일요일 찾기
+    const todayWeekStart = new Date(today);
+    todayWeekStart.setDate(today.getDate() - today.getDay());
+    
+    // 이번 달 첫 번째 일요일 찾기
+    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const firstDayOfWeek = monthStart.getDay();
+    const firstSunday = new Date(monthStart);
+    if (firstDayOfWeek !== 0) {
+      firstSunday.setDate(monthStart.getDate() - firstDayOfWeek);
+    }
+    
+    // 몇 주차인지 계산
+    currentWeekOffset = Math.floor((todayWeekStart - firstSunday) / (7 * 24 * 60 * 60 * 1000));
+  }
+  
   for (const comp of competitors) {
     await renderCalendar(comp.id);
   }
