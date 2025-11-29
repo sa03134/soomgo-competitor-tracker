@@ -1,4 +1,226 @@
 {
+  "2025-07-04": {
+    "hirings": 124,
+    "reviews": 80,
+    "rating": 4.9,
+    "hourly": {
+      "16:29": {
+        "hirings": 123,
+        "reviews": 80
+      },
+      "23:56": {
+        "hirings": 124,
+        "reviews": 80
+      }
+    }
+  },
+  "2025-07-05": {
+    "hirings": 124,
+    "reviews": 80,
+    "rating": 4.9,
+    "hourly": {
+      "13:09": {
+        "hirings": 124,
+        "reviews": 80
+      }
+    }
+  },
+  "2025-07-07": {
+    "hirings": 125,
+    "reviews": 82,
+    "rating": 4.9,
+    "hourly": {
+      "10:19": {
+        "hirings": 124,
+        "reviews": 80
+      },
+      "14:21": {
+        "hirings": 125,
+        "reviews": 82
+      },
+      "19:50": {
+        "hirings": 125,
+        "reviews": 82
+      }
+    }
+  },
+  "2025-07-08": {
+    "hirings": 125,
+    "reviews": 82,
+    "rating": 4.9,
+    "hourly": {
+      "14:50": {
+        "hirings": 125,
+        "reviews": 82
+      }
+    }
+  },
+  "2025-07-09": {
+    "hirings": 124,
+    "reviews": 82,
+    "rating": 4.9,
+    "hourly": {
+      "13:37": {
+        "hirings": 124,
+        "reviews": 82
+      },
+      "23:43": {
+        "hirings": 124,
+        "reviews": 82
+      }
+    }
+  },
+  "2025-07-10": {
+    "hirings": 125,
+    "reviews": 82,
+    "rating": 4.9,
+    "hourly": {
+      "23:39": {
+        "hirings": 125,
+        "reviews": 82
+      }
+    }
+  },
+  "2025-07-11": {
+    "hirings": 126,
+    "reviews": 82,
+    "rating": 4.9,
+    "hourly": {
+      "10:51": {
+        "hirings": 126,
+        "reviews": 82
+      }
+    }
+  },
+  "2025-07-13": {
+    "hirings": 126,
+    "reviews": 82,
+    "rating": 4.9,
+    "hourly": {
+      "01:13": {
+        "hirings": 126,
+        "reviews": 82
+      },
+      "15:05": {
+        "hirings": 126,
+        "reviews": 82
+      }
+    }
+  },
+  "2025-07-14": {
+    "hirings": 127,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "17:48": {
+        "hirings": 127,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-15": {
+    "hirings": 127,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "12:13": {
+        "hirings": 127,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-16": {
+    "hirings": 128,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "17:18": {
+        "hirings": 128,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-18": {
+    "hirings": 129,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "18:02": {
+        "hirings": 129,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-21": {
+    "hirings": 129,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "14:31": {
+        "hirings": 129,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-23": {
+    "hirings": 132,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "04:06": {
+        "hirings": 132,
+        "reviews": 85
+      },
+      "20:59": {
+        "hirings": 132,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-25": {
+    "hirings": 138,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "14:17": {
+        "hirings": 138,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-26": {
+    "hirings": 137,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "18:26": {
+        "hirings": 137,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-28": {
+    "hirings": 137,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "02:56": {
+        "hirings": 137,
+        "reviews": 85
+      }
+    }
+  },
+  "2025-07-30": {
+    "hirings": 137,
+    "reviews": 85,
+    "rating": 4.9,
+    "hourly": {
+      "15:51": {
+        "hirings": 137,
+        "reviews": 85
+      }
+    }
+  },
   "2025-11-08": {
     "hirings": 195,
     "reviews": 128,
