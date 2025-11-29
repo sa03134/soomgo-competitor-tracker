@@ -329,7 +329,8 @@ h1 {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  grid-template-rows: 12px repeat(auto-fill, 38px);
+  grid-template-rows: 12px repeat(6, 38px);
+  min-height: 240px;
 }
 
 .cal-header-day {
@@ -813,36 +814,100 @@ h1 {
   color: #fca5a5;
 }
 
+.tooltip-summary {
+  background: rgba(108, 60, 242, 0.2);
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin: 8px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #c4b5fd;
+  text-align: center;
+}
+
+.no-activity {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  padding: 8px;
+  font-style: italic;
+}
+
+.no-hourly-info {
+  text-align: center;
+  color: rgba(255, 165, 0, 0.8);
+  font-size: 10px;
+  padding: 8px;
+  margin-top: 8px;
+  background: rgba(255, 165, 0, 0.1);
+  border-radius: 4px;
+}
+
 /* 툴팁 - 시간대별 데이터 */
 .tooltip-hourly {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.tooltip-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  margin-top: 8px;
+  margin-bottom: 6px;
 }
 
 .hourly-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 3px 0;
-  font-size: 10px;
+  padding: 6px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  margin-bottom: 3px;
+  transition: all 0.2s;
+}
+
+.hourly-item.hiring-increase {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.3) 0%, rgba(34, 197, 94, 0.15) 100%);
+  border-left: 3px solid #22c55e;
+  font-weight: 600;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  }
 }
 
 .hourly-time {
   color: rgba(255, 255, 255, 0.7);
-  min-width: 40px;
-  font-weight: 600;
+  min-width: 50px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
 }
 
-.hourly-values {
+.hourly-item.hiring-increase .hourly-time {
+  color: #22c55e;
+}
+
+.hourly-change {
   color: white;
   font-weight: 600;
+  flex: 1;
 }
 
-.hourly-diff {
-  color: rgba(196, 181, 253, 0.9);
-  font-size: 9px;
-  margin-left: auto;
+.hourly-item.hiring-increase .hourly-change {
+  color: #fff;
+  font-weight: 700;
 }
 
 /* MVP Day - 가장 많이 증가한 날 */
