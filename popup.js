@@ -140,16 +140,23 @@ async function renderCalendar(compId) {
       
       // 툴팁 이벤트
       dayEl.addEventListener('mouseenter', (e) => {
+        console.log('마우스 진입:', dateStr, todayData);
+        const targetElement = e.currentTarget; // ✅ 즉시 저장
+        
+        // 숨기기 타임아웃 취소
         if (hoverTimeout) clearTimeout(hoverTimeout);
         
-        hoverTimeout = setTimeout(() => {
-          showTooltip(e.currentTarget, comp, dateStr, todayData, prevData);
-        }, 100);
+        // 즉시 표시
+        showTooltip(targetElement, comp, dateStr, todayData, prevData);
       });
       
       dayEl.addEventListener('mouseleave', () => {
+        console.log('마우스 나감');
+        // 100ms 후 숨기기 (빠른 재진입 허용)
         if (hoverTimeout) clearTimeout(hoverTimeout);
-        hideTooltip();
+        hoverTimeout = setTimeout(() => {
+          hideTooltip();
+        }, 150);
       });
       
       prevData = todayData;
@@ -208,6 +215,7 @@ function updateTodayDelta(compId, data) {
 
 // 툴팁
 function showTooltip(element, comp, dateStr, todayData, prevData) {
+  console.log('showTooltip 호출:', element, comp, dateStr, todayData, prevData);
   if (!element) return;
   
   if (currentTooltip) {
@@ -217,38 +225,27 @@ function showTooltip(element, comp, dateStr, todayData, prevData) {
   
   const tooltip = document.createElement('div');
   tooltip.className = 'tooltip';
+  console.log('툴팁 생성:', tooltip);
   
   const hChange = prevData ? todayData.hirings - prevData.hirings : 0;
   const rChange = prevData ? todayData.reviews - prevData.reviews : 0;
   
-  let tooltipHTML = `
-    <div class="tooltip-header">${comp.name} - ${dateStr}</div>
-    <div class="tooltip-body">
-      <div class="tooltip-row">
-        <span class="tooltip-label">고용</span>
-        <span class="tooltip-value">${todayData.hirings}</span>
-        ${hChange !== 0 ? `<span class="tooltip-change ${hChange > 0 ? 'positive' : 'negative'}">${hChange > 0 ? '+' : ''}${hChange}</span>` : ''}
-      </div>
-      <div class="tooltip-row">
-        <span class="tooltip-label">리뷰</span>
-        <span class="tooltip-value">${todayData.reviews}</span>
-        ${rChange !== 0 ? `<span class="tooltip-change ${rChange > 0 ? 'positive' : 'negative'}">${rChange > 0 ? '+' : ''}${rChange}</span>` : ''}
-      </div>
-      ${todayData.rating ? `
-        <div class="tooltip-row">
-          <span class="tooltip-label">평점</span>
-          <span class="tooltip-value">${todayData.rating}</span>
-        </div>
-      ` : ''}
-    </div>
-  `;
-  
-  // 시간대별 데이터
+  // 시간대별 데이터가 있으면 활동 시간대 중심으로 표시
   if (todayData.hourly) {
     const hours = Object.keys(todayData.hourly).sort();
     
+    let tooltipHTML = `
+      <div class="tooltip-header">${comp.name} - ${dateStr}</div>
+      <div class="tooltip-summary">
+        총 변화: 고용 ${hChange > 0 ? '+' : ''}${hChange} / 리뷰 ${rChange > 0 ? '+' : ''}${rChange}
+      </div>
+    `;
+    
     if (hours.length > 0) {
+      tooltipHTML += `<div class="tooltip-section-title">⏰ 활동 시간대</div>`;
       tooltipHTML += `<div class="tooltip-hourly">`;
+      
+      let hasActivity = false;
       
       hours.forEach((hour, index) => {
         const hourData = todayData.hourly[hour];
@@ -257,20 +254,56 @@ function showTooltip(element, comp, dateStr, todayData, prevData) {
         const hDiff = prevHourData ? hourData.hirings - prevHourData.hirings : 0;
         const rDiff = prevHourData ? hourData.reviews - prevHourData.reviews : 0;
         
-        tooltipHTML += `
-          <div class="hourly-item">
-            <span class="hourly-time">${hour}</span>
-            <span class="hourly-values">${hourData.hirings}/${hourData.reviews}</span>
-            ${hDiff !== 0 || rDiff !== 0 ? `<span class="hourly-diff">(${hDiff > 0 ? '+' : ''}${hDiff}/${rDiff > 0 ? '+' : ''}${rDiff})</span>` : ''}
-          </div>
-        `;
+        // 변화가 있는 시간대만 표시하거나 모든 시간 표시
+        if (hDiff !== 0 || rDiff !== 0) {
+          hasActivity = true;
+          tooltipHTML += `
+            <div class="hourly-item ${hDiff > 0 ? 'hiring-increase' : ''}">
+              <span class="hourly-time">${hour}</span>
+              <span class="hourly-change">
+                ${hDiff > 0 ? '🔥 ' : ''}고용 ${hDiff > 0 ? '+' : ''}${hDiff}건
+                ${rDiff !== 0 ? ` / 리뷰 ${rDiff > 0 ? '+' : ''}${rDiff}건` : ''}
+              </span>
+            </div>
+          `;
+        }
       });
+      
+      if (!hasActivity) {
+        tooltipHTML += `<div class="no-activity">활동 없음</div>`;
+      }
       
       tooltipHTML += `</div>`;
     }
+    
+    tooltip.innerHTML = tooltipHTML;
+  } else {
+    // 시간대별 데이터 없으면 기본 정보만
+    let tooltipHTML = `
+      <div class="tooltip-header">${comp.name} - ${dateStr}</div>
+      <div class="tooltip-body">
+        <div class="tooltip-row">
+          <span class="tooltip-label">고용</span>
+          <span class="tooltip-value">${todayData.hirings}</span>
+          ${hChange !== 0 ? `<span class="tooltip-change ${hChange > 0 ? 'positive' : 'negative'}">${hChange > 0 ? '+' : ''}${hChange}</span>` : ''}
+        </div>
+        <div class="tooltip-row">
+          <span class="tooltip-label">리뷰</span>
+          <span class="tooltip-value">${todayData.reviews}</span>
+          ${rChange !== 0 ? `<span class="tooltip-change ${rChange > 0 ? 'positive' : 'negative'}">${rChange > 0 ? '+' : ''}${rChange}</span>` : ''}
+        </div>
+        ${todayData.rating ? `
+          <div class="tooltip-row">
+            <span class="tooltip-label">평점</span>
+            <span class="tooltip-value">${todayData.rating}</span>
+          </div>
+        ` : ''}
+      </div>
+      <div class="no-hourly-info">⚠️ 시간대별 데이터 없음</div>
+    `;
+    
+    tooltip.innerHTML = tooltipHTML;
   }
-  
-  tooltip.innerHTML = tooltipHTML;
   document.body.appendChild(tooltip);
   currentTooltip = tooltip;
   
