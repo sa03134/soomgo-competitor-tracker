@@ -448,11 +448,11 @@ async function updateStats7() {
     row.innerHTML = `
       <td class="stat-name ${comp.isMine ? 'stat-highlight' : ''}">${comp.name}</td>
       <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
+        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
         <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgH}/일</div>
       </td>
       <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
+        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
         <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgR}/일</div>
       </td>
     `;
@@ -501,11 +501,11 @@ async function updateStatsMonth() {
     row.innerHTML = `
       <td class="stat-name ${comp.isMine ? 'stat-highlight' : ''}">${comp.name}</td>
       <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
+        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
         <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgH}/일</div>
       </td>
       <td class="${comp.isMine ? 'stat-highlight' : ''}">
-        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
+        <div style="font-size: 12px; font-weight: 500; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
         <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgR}/일</div>
       </td>
     `;
@@ -598,6 +598,7 @@ async function renderAll() {
   await updateQuickStats();
   await updateStats7();
   await updateStatsMonth();
+  await updateDailyMission();
   updateNavButtons();
 }
 
@@ -703,4 +704,182 @@ async function downloadAllData() {
   URL.revokeObjectURL(url);
   
   console.log('✅ CSV 다운로드 완료');
+}
+
+// 오늘의 미션 업데이트
+async function updateDailyMission() {
+  const result = await chrome.storage.local.get(['passcoach']);
+  const data = result.passcoach || {};
+  
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  const todayData = data[todayStr];
+  const yesterdayData = data[yesterdayStr];
+  
+  // 날짜 업데이트
+  const missionDateEl = document.getElementById('missionDate');
+  if (missionDateEl) {
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    missionDateEl.textContent = `${today.getMonth() + 1}/${today.getDate()} ${days[today.getDay()]}`;
+  }
+  
+  let completed = 0;
+  const total = 3;
+  
+  if (todayData && yesterdayData) {
+    const hChange = todayData.hirings - yesterdayData.hirings;
+    const rChange = todayData.reviews - yesterdayData.reviews;
+    
+    // 미션 1: 고용 1건
+    const mission1 = document.getElementById('mission1');
+    if (hChange >= 1) {
+      mission1.classList.add('completed');
+      mission1.querySelector('.mission-icon').textContent = '✅';
+      completed++;
+      
+      // 완료 시간 표시 (시간대별 데이터가 있으면)
+      if (todayData.hourly) {
+        const hours = Object.keys(todayData.hourly).sort();
+        for (const hour of hours) {
+          const hourData = todayData.hourly[hour];
+          const prevHourIndex = hours.indexOf(hour) - 1;
+          const prevHourData = prevHourIndex >= 0 ? todayData.hourly[hours[prevHourIndex]] : yesterdayData;
+          
+          if (hourData.hirings > prevHourData.hirings) {
+            mission1.querySelector('.mission-time').textContent = `${hour} 완료`;
+            break;
+          }
+        }
+      }
+    }
+    
+    // 미션 2: 리뷰 1건
+    const mission2 = document.getElementById('mission2');
+    if (rChange >= 1) {
+      mission2.classList.add('completed');
+      mission2.querySelector('.mission-icon').textContent = '✅';
+      completed++;
+      
+      if (todayData.hourly) {
+        const hours = Object.keys(todayData.hourly).sort();
+        for (const hour of hours) {
+          const hourData = todayData.hourly[hour];
+          const prevHourIndex = hours.indexOf(hour) - 1;
+          const prevHourData = prevHourIndex >= 0 ? todayData.hourly[hours[prevHourIndex]] : yesterdayData;
+          
+          if (hourData.reviews > prevHourData.reviews) {
+            mission2.querySelector('.mission-time').textContent = `${hour} 완료`;
+            break;
+          }
+        }
+      }
+    }
+    
+    // 미션 3: 추가 고용 1건 (총 2건)
+    const mission3 = document.getElementById('mission3');
+    if (hChange >= 2) {
+      mission3.classList.add('completed');
+      mission3.querySelector('.mission-icon').textContent = '✅';
+      completed++;
+    } else if (hChange >= 1) {
+      // 남은 시간 계산
+      const now = new Date();
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59);
+      const hoursLeft = Math.ceil((endOfDay - now) / (1000 * 60 * 60));
+      mission3.querySelector('.mission-time').textContent = `남은 시간 ${hoursLeft}h`;
+    }
+  }
+  
+  // 진행률 업데이트
+  const percentage = Math.round((completed / total) * 100);
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+  
+  if (progressFill) {
+    progressFill.style.width = `${percentage}%`;
+  }
+  
+  if (progressText) {
+    progressText.textContent = `${completed}/${total} 완료 (${percentage}%)`;
+  }
+  
+  // 연속 달성 계산
+  await updateMissionStreak(data);
+  
+  // 주간 성공 계산
+  await updateWeekSuccess(data);
+}
+
+// 미션 연속 달성
+async function updateMissionStreak(data) {
+  const dates = Object.keys(data).sort().reverse(); // 최신부터
+  let streak = 0;
+  
+  for (let i = 0; i < dates.length - 1; i++) {
+    const todayStr = dates[i];
+    const yesterdayStr = dates[i + 1];
+    
+    const today = new Date(todayStr);
+    const yesterday = new Date(yesterdayStr);
+    const dayDiff = Math.floor((today - yesterday) / (1000 * 60 * 60 * 24));
+    
+    if (dayDiff !== 1) break; // 연속 아님
+    
+    const todayData = data[todayStr];
+    const yesterdayData = data[yesterdayStr];
+    
+    const hChange = todayData.hirings - yesterdayData.hirings;
+    
+    // 미션 달성 (고용 1건 이상)
+    if (hChange >= 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  
+  const streakEl = document.getElementById('missionStreak');
+  if (streakEl) {
+    streakEl.textContent = `${streak}일`;
+  }
+}
+
+// 주간 성공
+async function updateWeekSuccess(data) {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = 일요일
+  
+  // 이번 주 일요일
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - dayOfWeek);
+  
+  let successDays = 0;
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(sunday);
+    date.setDate(sunday.getDate() + i);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    if (date > today) continue; // 미래는 건너뜀
+    
+    const todayData = data[dateStr];
+    const yesterdayStr = new Date(date.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const yesterdayData = data[yesterdayStr];
+    
+    if (todayData && yesterdayData) {
+      const hChange = todayData.hirings - yesterdayData.hirings;
+      if (hChange >= 1) {
+        successDays++;
+      }
+    }
+  }
+  
+  const weekSuccessEl = document.getElementById('weekSuccess');
+  if (weekSuccessEl) {
+    const currentDay = dayOfWeek === 0 ? 7 : dayOfWeek; // 일요일 = 7
+    weekSuccessEl.textContent = `${successDays}/${currentDay}일`;
+  }
 }

@@ -419,9 +419,9 @@ h1 {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 2px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 1px;
 }
 
 .stat-section {
@@ -431,7 +431,7 @@ h1 {
 .stat-header {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   margin-bottom: 2px;
 }
 
@@ -483,31 +483,31 @@ h1 {
 
 .stats-table {
   width: 100%;
-  font-size: 11px;
+  font-size: 10px;
   border-collapse: collapse;
 }
 
 .stats-table th {
-  padding: 2px 4px;
+  padding: 2px 3px;
   text-align: center;
   font-weight: 500;
   color: #666;
   border-bottom: 1px solid #e5e5e5;
-  font-size: 9px;
+  font-size: 8px;
 }
 
 .stats-table td {
-  padding: 3px;
+  padding: 2px;
   text-align: center;
   color: #1a1a1a;
-  font-size: 11px;
+  font-size: 10px;
   vertical-align: middle;
 }
 
 .stat-name {
   font-weight: 500;
   text-align: left;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .stat-highlight {
@@ -903,4 +903,117 @@ h1 {
 .btn-download:hover {
   background: #059669;
   transform: scale(1.05);
+}
+
+/* 오늘의 미션 */
+.daily-mission {
+  padding: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  color: white;
+  height: 100%;
+}
+
+.mission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mission-title {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mission-date {
+  font-size: 9px;
+  opacity: 0.9;
+}
+
+.mission-progress {
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 7px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+  transition: width 0.3s ease;
+  border-radius: 7px;
+}
+
+.progress-text {
+  font-size: 9px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.mission-list {
+  margin: 6px 0;
+}
+
+.mission-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  margin-bottom: 3px;
+  font-size: 9px;
+  transition: all 0.3s;
+}
+
+.mission-item:last-child {
+  margin-bottom: 0;
+}
+
+.mission-item.completed {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+.mission-item.completed .mission-icon {
+  content: '✅';
+}
+
+.mission-icon {
+  font-size: 11px;
+  min-width: 16px;
+}
+
+.mission-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.mission-time {
+  font-size: 8px;
+  opacity: 0.8;
+}
+
+.mission-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mission-stat {
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.mission-stat span {
+  font-weight: 700;
+  color: #fbbf24;
 }

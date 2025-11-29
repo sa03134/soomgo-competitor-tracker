@@ -106,6 +106,44 @@
             </tbody>
           </table>
         </div>
+        
+        <div class="stat-section">
+          <!-- 오늘의 미션 -->
+          <div class="daily-mission">
+            <div class="mission-header">
+              <span class="mission-title">🎯 오늘의 미션</span>
+              <span class="mission-date" id="missionDate">11/29 금</span>
+            </div>
+            <div class="mission-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <div class="progress-text" id="progressText">0/3 완료 (0%)</div>
+            </div>
+            <div class="mission-list">
+              <div class="mission-item" id="mission1">
+                <span class="mission-icon">⏳</span>
+                <span class="mission-text">고용 1건 달성</span>
+                <span class="mission-time" id="missionTime1"></span>
+              </div>
+              <div class="mission-item" id="mission2">
+                <span class="mission-icon">⏳</span>
+                <span class="mission-text">리뷰 1건 달성</span>
+                <span class="mission-time" id="missionTime2"></span>
+              </div>
+              <div class="mission-item" id="mission3">
+                <span class="mission-icon">⏳</span>
+                <span class="mission-text">추가 고용 1건</span>
+                <span class="mission-time" id="missionTime3"></span>
+              </div>
+            </div>
+            <div class="mission-footer">
+              <div class="mission-stat">💪 연속 달성: <span id="missionStreak">0일</span></div>
+              <div class="mission-stat">🏆 이번 주: <span id="weekSuccess">0/7일</span></div>
+            </div>
+          </div>
+        </div>
+        </div>
       </div>
       <div class="last-update" id="lastUpdate">-</div>
     </div>
