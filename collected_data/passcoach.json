@@ -333,13 +333,17 @@
     "hirings": 203,
     "reviews": 132,
     "rating": 5.0,
-    "timestamp": "2025-11-29T20:15:43.662267",
+    "timestamp": "2025-11-29T22:13:45.482322",
     "hourly": {
       "16:16": {
         "hirings": 203,
         "reviews": 132
       },
       "20:15": {
+        "hirings": 203,
+        "reviews": 132
+      },
+      "22:13": {
         "hirings": 203,
         "reviews": 132
       }
