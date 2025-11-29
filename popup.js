@@ -15,7 +15,7 @@ let hoverTimeout = null;
 async function syncFromGithub() {
   const GITHUB_BASE = 'https://raw.githubusercontent.com/sa03134/soomgo-competitor-tracker/main/collected_data';
   
-  showToast('📥 GitHub에서 데이터 가져오는 중...');
+  // showToast('📥 GitHub에서 데이터 가져오는 중...');
   
   try {
     for (const comp of competitors) {
@@ -32,7 +32,7 @@ async function syncFromGithub() {
       console.log(`✅ ${comp.name} 데이터 저장 완료`);
     }
     
-    showToast('✅ 데이터 동기화 완료!');
+    // showToast('✅ 데이터 동기화 완료!');
     await renderAll();
     updateLastUpdateTime();
   } catch (error) {
@@ -112,6 +112,11 @@ async function renderCalendar(compId) {
       
       if (hChange > 0) {
         dayEl.classList.add('has-hiring');
+      }
+      
+      // 고용 없는 날 경고 (이전 데이터 있는데 증가 없음)
+      if (hChange === 0 && prevData) {
+        dayEl.classList.add('no-hiring');
       }
       
       dayEl.innerHTML = `
@@ -381,15 +386,38 @@ async function updateStats7() {
   if (!tbody) return;
   tbody.innerHTML = '';
   
+  // 오늘이 속한 주 계산
   const today = new Date();
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const offset = currentWeekOffset * 7;
-  const weekStart = new Date(startOfMonth.getTime() + offset * 24 * 60 * 60 * 1000);
+  const currentMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  
+  // 오늘이 현재 표시 월에 속하면 오늘 주차, 아니면 첫 주
+  let weekStart;
+  if (today.getMonth() === currentMonth.getMonth() && today.getFullYear() === currentMonth.getFullYear()) {
+    // 오늘이 속한 주의 시작일 (일요일)
+    const dayOfWeek = today.getDay();
+    weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - dayOfWeek);
+  } else {
+    // 다른 월이면 offset 사용
+    const offset = currentWeekOffset * 7;
+    weekStart = new Date(currentMonthStart.getTime() + offset * 24 * 60 * 60 * 1000);
+  }
+  
   const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+  
+  // 주차 번호 계산 (해당 월에서 몇 번째 주인지)
+  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  const weekNumber = Math.ceil((weekStart.getDate() + firstDayOfMonth.getDay()) / 7);
   
   const weekRangeEl = document.getElementById('weekRange');
   if (weekRangeEl) {
     weekRangeEl.textContent = `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
+  }
+  
+  // 주차 타이틀 업데이트
+  const weekTitle = document.querySelector('.stat-title');
+  if (weekTitle) {
+    weekTitle.childNodes[0].textContent = `${weekNumber}주차 `;
   }
   
   for (const comp of competitors) {
@@ -398,29 +426,41 @@ async function updateStats7() {
     
     let totalH = 0;
     let totalR = 0;
+    let daysWithData = 0;
     
+    // 해당 주의 7일 동안 데이터 수집
     for (let i = 0; i < 7; i++) {
       const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
-      const dayData = data[dateStr];
       
-      if (dayData) {
-        const dates = Object.keys(data).sort();
-        const index = dates.indexOf(dateStr);
-        const prevData = index > 0 ? data[dates[index - 1]] : null;
-        
-        if (prevData) {
-          totalH += dayData.hirings - prevData.hirings;
-          totalR += dayData.reviews - prevData.reviews;
-        }
+      // 이전 날짜
+      const prevDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
+      const prevDateStr = prevDate.toISOString().split('T')[0];
+      
+      const dayData = data[dateStr];
+      const prevData = data[prevDateStr];
+      
+      if (dayData && prevData) {
+        totalH += dayData.hirings - prevData.hirings;
+        totalR += dayData.reviews - prevData.reviews;
+        daysWithData++;
       }
     }
+    
+    const avgH = daysWithData > 0 ? (totalH / daysWithData).toFixed(1) : '0.0';
+    const avgR = daysWithData > 0 ? (totalR / daysWithData).toFixed(1) : '0.0';
     
     const row = tbody.insertRow();
     row.innerHTML = `
       <td class="stat-name ${comp.isMine ? 'stat-highlight' : ''}">${comp.name}</td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">${totalH > 0 ? '+' : ''}${totalH}</td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">${totalR > 0 ? '+' : ''}${totalR}</td>
+      <td class="${comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
+        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgH}/일</div>
+      </td>
+      <td class="${comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
+        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgR}/일</div>
+      </td>
     `;
   }
 }
@@ -449,6 +489,7 @@ async function updateStatsMonth() {
     
     let totalH = 0;
     let totalR = 0;
+    let daysWithData = 0;
     
     for (let i = 1; i < dates.length; i++) {
       const today = data[dates[i]];
@@ -456,13 +497,23 @@ async function updateStatsMonth() {
       
       totalH += today.hirings - yesterday.hirings;
       totalR += today.reviews - yesterday.reviews;
+      daysWithData++;
     }
+    
+    const avgH = daysWithData > 0 ? (totalH / daysWithData).toFixed(1) : '0.0';
+    const avgR = daysWithData > 0 ? (totalR / daysWithData).toFixed(1) : '0.0';
     
     const row = tbody.insertRow();
     row.innerHTML = `
       <td class="stat-name ${comp.isMine ? 'stat-highlight' : ''}">${comp.name}</td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">${totalH > 0 ? '+' : ''}${totalH}</td>
-      <td class="${comp.isMine ? 'stat-highlight' : ''}">${totalR > 0 ? '+' : ''}${totalR}</td>
+      <td class="${comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalH > 0 ? '+' : ''}${totalH}</div>
+        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgH}/일</div>
+      </td>
+      <td class="${comp.isMine ? 'stat-highlight' : ''}">
+        <div style="font-size: 12px; font-weight: 700; margin-bottom: 1px;">${totalR > 0 ? '+' : ''}${totalR}</div>
+        <div style="font-size: 9px; color: #6C3CF2; font-weight: 500;">${avgR}/일</div>
+      </td>
     `;
   }
 }
@@ -529,6 +580,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await syncFromGithub();
   });
   
+  document.getElementById('downloadDataBtn')?.addEventListener('click', async () => {
+    await downloadAllData();
+  });
+  
   document.getElementById('settingsBtn')?.addEventListener('click', () => {
     const panel = document.getElementById('settingsPanel');
     panel?.classList.toggle('hidden');
@@ -581,3 +636,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.tabs.create({ url: 'https://soomgo.com/profile/users/11571181' });
   });
 });
+
+// 데이터 다운로드
+async function downloadAllData() {
+  const allData = {};
+  
+  for (const comp of competitors) {
+    const result = await chrome.storage.local.get([comp.id]);
+    allData[comp.name] = result[comp.id] || {};
+  }
+  
+  // UTF-8 BOM 추가 (Excel 한글 깨짐 방지)
+  let csv = '\uFEFF';
+  csv += 'Date,Competitor,Hirings,Reviews,Rating,Hiring_Change,Review_Change\n';
+  
+  for (const [name, data] of Object.entries(allData)) {
+    const dates = Object.keys(data).sort();
+    
+    for (let i = 0; i < dates.length; i++) {
+      const date = dates[i];
+      const dayData = data[date];
+      const prevData = i > 0 ? data[dates[i - 1]] : null;
+      
+      const hChange = prevData ? dayData.hirings - prevData.hirings : 0;
+      const rChange = prevData ? dayData.reviews - prevData.reviews : 0;
+      
+      csv += `${date},${name},${dayData.hirings},${dayData.reviews},${dayData.rating || 0},${hChange},${rChange}\n`;
+    }
+  }
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `soomgo_data_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('✅ CSV 다운로드 완료');
+}
