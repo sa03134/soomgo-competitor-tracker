@@ -777,13 +777,17 @@
     "hirings": 209,
     "reviews": 135,
     "rating": 5.0,
-    "timestamp": "2025-12-10T07:18:57.636695",
+    "timestamp": "2025-12-10T08:21:41.867264",
     "hourly": {
       "06:24": {
         "hirings": 209,
         "reviews": 135
       },
       "07:18": {
+        "hirings": 209,
+        "reviews": 135
+      },
+      "08:21": {
         "hirings": 209,
         "reviews": 135
       }
