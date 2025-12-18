@@ -1099,13 +1099,17 @@
     }
   },
   "2025-12-18": {
-    "hirings": 104,
+    "hirings": 107,
     "reviews": 634,
     "rating": 5.0,
-    "timestamp": "2025-12-18T07:18:28.561976",
+    "timestamp": "2025-12-18T13:32:39.221693",
     "hourly": {
       "07:18": {
         "hirings": 104,
+        "reviews": 634
+      },
+      "13:32": {
+        "hirings": 107,
         "reviews": 634
       }
     }
