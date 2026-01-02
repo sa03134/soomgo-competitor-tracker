@@ -1489,7 +1489,7 @@
     "hirings": 696,
     "reviews": 268,
     "rating": 5.0,
-    "timestamp": "2026-01-02T15:15:59.472605",
+    "timestamp": "2026-01-02T19:10:51.320424",
     "hourly": {
       "01:10": {
         "hirings": 692,
@@ -1520,6 +1520,10 @@
         "reviews": 268
       },
       "15:15": {
+        "hirings": 696,
+        "reviews": 268
+      },
+      "19:10": {
         "hirings": 696,
         "reviews": 268
       }
