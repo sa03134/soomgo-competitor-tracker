@@ -1927,13 +1927,17 @@
     }
   },
   "2026-01-08": {
-    "hirings": 153,
+    "hirings": 157,
     "reviews": 670,
     "rating": 5.0,
-    "timestamp": "2026-01-08T03:25:04.117396",
+    "timestamp": "2026-01-08T08:22:04.827213",
     "hourly": {
       "03:25": {
         "hirings": 153,
+        "reviews": 670
+      },
+      "08:22": {
+        "hirings": 157,
         "reviews": 670
       }
     }
