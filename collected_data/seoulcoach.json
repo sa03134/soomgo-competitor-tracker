@@ -2011,14 +2011,18 @@
     }
   },
   "2026-01-10": {
-    "hirings": 163,
-    "reviews": 671,
+    "hirings": 164,
+    "reviews": 672,
     "rating": 5.0,
-    "timestamp": "2026-01-10T05:17:05.399521",
+    "timestamp": "2026-01-10T09:14:53.644220",
     "hourly": {
       "05:17": {
         "hirings": 163,
         "reviews": 671
+      },
+      "09:14": {
+        "hirings": 164,
+        "reviews": 672
       }
     }
   }
