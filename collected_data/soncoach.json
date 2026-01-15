@@ -2005,13 +2005,17 @@
     "hirings": 788,
     "reviews": 291,
     "rating": 5.0,
-    "timestamp": "2026-01-15T06:24:27.529978",
+    "timestamp": "2026-01-15T07:21:00.676348",
     "hourly": {
       "03:25": {
         "hirings": 786,
         "reviews": 291
       },
       "06:24": {
+        "hirings": 788,
+        "reviews": 291
+      },
+      "07:21": {
         "hirings": 788,
         "reviews": 291
       }
