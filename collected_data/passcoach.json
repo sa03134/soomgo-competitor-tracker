@@ -3113,13 +3113,17 @@
     "hirings": 289,
     "reviews": 173,
     "rating": 5.0,
-    "timestamp": "2026-02-08T15:20:16.505073",
+    "timestamp": "2026-02-08T18:27:55.716939",
     "hourly": {
       "13:40": {
         "hirings": 289,
         "reviews": 173
       },
       "15:20": {
+        "hirings": 289,
+        "reviews": 173
+      },
+      "18:27": {
         "hirings": 289,
         "reviews": 173
       }
