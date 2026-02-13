@@ -3082,13 +3082,17 @@
     }
   },
   "2026-02-13": {
-    "hirings": 958,
+    "hirings": 961,
     "reviews": 346,
     "rating": 5.0,
-    "timestamp": "2026-02-13T04:14:12.095173",
+    "timestamp": "2026-02-13T05:54:58.977045",
     "hourly": {
       "04:14": {
         "hirings": 958,
+        "reviews": 346
+      },
+      "05:54": {
+        "hirings": 961,
         "reviews": 346
       }
     }
