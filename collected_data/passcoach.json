@@ -4246,14 +4246,18 @@
     }
   },
   "2026-03-10": {
-    "hirings": 409,
-    "reviews": 219,
+    "hirings": 415,
+    "reviews": 222,
     "rating": 5.0,
-    "timestamp": "2026-03-10T01:19:51.633165",
+    "timestamp": "2026-03-10T14:45:43.632814",
     "hourly": {
       "01:19": {
         "hirings": 409,
         "reviews": 219
+      },
+      "14:45": {
+        "hirings": 415,
+        "reviews": 222
       }
     }
   }
