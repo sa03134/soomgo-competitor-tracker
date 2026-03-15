@@ -4457,13 +4457,17 @@
     "hirings": 447,
     "reviews": 230,
     "rating": 5.0,
-    "timestamp": "2026-03-15T04:27:54.378993",
+    "timestamp": "2026-03-15T08:29:16.621449",
     "hourly": {
       "01:47": {
         "hirings": 447,
         "reviews": 230
       },
       "04:27": {
+        "hirings": 447,
+        "reviews": 230
+      },
+      "08:29": {
         "hirings": 447,
         "reviews": 230
       }
