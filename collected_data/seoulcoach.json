@@ -4455,13 +4455,17 @@
     }
   },
   "2026-03-15": {
-    "hirings": 347,
+    "hirings": 348,
     "reviews": 774,
     "rating": 5.0,
-    "timestamp": "2026-03-15T01:46:55.296784",
+    "timestamp": "2026-03-15T04:27:43.055093",
     "hourly": {
       "01:46": {
         "hirings": 347,
+        "reviews": 774
+      },
+      "04:27": {
+        "hirings": 348,
         "reviews": 774
       }
     }
