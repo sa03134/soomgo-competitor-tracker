@@ -4922,9 +4922,13 @@
     "hirings": 379,
     "reviews": 797,
     "rating": 5.0,
-    "timestamp": "2026-04-05T06:11:17.602793",
+    "timestamp": "2026-04-05T08:35:46.593454",
     "hourly": {
       "06:11": {
+        "hirings": 379,
+        "reviews": 797
+      },
+      "08:35": {
         "hirings": 379,
         "reviews": 797
       }
