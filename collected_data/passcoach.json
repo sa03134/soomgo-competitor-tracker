@@ -5214,13 +5214,17 @@
     }
   },
   "2026-04-08": {
-    "hirings": 574,
+    "hirings": 575,
     "reviews": 293,
     "rating": 5.0,
-    "timestamp": "2026-04-08T13:06:21.508263",
+    "timestamp": "2026-04-08T20:36:47.078494",
     "hourly": {
       "13:06": {
         "hirings": 574,
+        "reviews": 293
+      },
+      "20:36": {
+        "hirings": 575,
         "reviews": 293
       }
     }
