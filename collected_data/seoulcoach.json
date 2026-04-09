@@ -5034,13 +5034,17 @@
     "hirings": 380,
     "reviews": 797,
     "rating": 5.0,
-    "timestamp": "2026-04-09T13:09:59.789642",
+    "timestamp": "2026-04-09T19:59:52.680050",
     "hourly": {
       "06:17": {
         "hirings": 380,
         "reviews": 797
       },
       "13:09": {
+        "hirings": 380,
+        "reviews": 797
+      },
+      "19:59": {
         "hirings": 380,
         "reviews": 797
       }
