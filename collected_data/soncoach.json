@@ -4945,13 +4945,17 @@
     "hirings": 320,
     "reviews": 437,
     "rating": 5.0,
-    "timestamp": "2026-04-10T15:43:36.984526",
+    "timestamp": "2026-04-10T16:42:41.339309",
     "hourly": {
       "06:28": {
         "hirings": 318,
         "reviews": 436
       },
       "15:43": {
+        "hirings": 320,
+        "reviews": 437
+      },
+      "16:42": {
         "hirings": 320,
         "reviews": 437
       }
