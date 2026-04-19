@@ -5330,7 +5330,7 @@
     "hirings": 410,
     "reviews": 807,
     "rating": 5.0,
-    "timestamp": "2026-04-19T16:32:07.801423",
+    "timestamp": "2026-04-19T17:30:21.152946",
     "hourly": {
       "11:30": {
         "hirings": 408,
@@ -5341,6 +5341,10 @@
         "reviews": 806
       },
       "16:32": {
+        "hirings": 410,
+        "reviews": 807
+      },
+      "17:30": {
         "hirings": 410,
         "reviews": 807
       }
