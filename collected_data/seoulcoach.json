@@ -5702,7 +5702,7 @@
     "hirings": 453,
     "reviews": 835,
     "rating": 5.0,
-    "timestamp": "2026-05-02T12:53:34.712401",
+    "timestamp": "2026-05-02T17:39:13.496770",
     "hourly": {
       "02:03": {
         "hirings": 452,
@@ -5713,6 +5713,10 @@
         "reviews": 833
       },
       "12:53": {
+        "hirings": 453,
+        "reviews": 835
+      },
+      "17:39": {
         "hirings": 453,
         "reviews": 835
       }
