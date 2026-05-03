@@ -5621,13 +5621,17 @@
     "hirings": 460,
     "reviews": 473,
     "rating": 5.0,
-    "timestamp": "2026-05-03T10:47:55.350380",
+    "timestamp": "2026-05-03T14:08:31.688587",
     "hourly": {
       "05:51": {
         "hirings": 459,
         "reviews": 472
       },
       "10:47": {
+        "hirings": 460,
+        "reviews": 473
+      },
+      "14:08": {
         "hirings": 460,
         "reviews": 473
       }
