@@ -6222,13 +6222,17 @@
     "hirings": 523,
     "reviews": 870,
     "rating": 5.0,
-    "timestamp": "2026-05-26T20:00:00.484338",
+    "timestamp": "2026-05-26T23:03:14.477764",
     "hourly": {
       "03:46": {
         "hirings": 521,
         "reviews": 868
       },
       "20:00": {
+        "hirings": 523,
+        "reviews": 870
+      },
+      "23:03": {
         "hirings": 523,
         "reviews": 870
       }
