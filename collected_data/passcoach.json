@@ -6494,14 +6494,18 @@
     }
   },
   "2026-05-29": {
-    "hirings": 769,
-    "reviews": 357,
+    "hirings": 772,
+    "reviews": 362,
     "rating": 5.0,
-    "timestamp": "2026-05-29T00:06:01.816388",
+    "timestamp": "2026-05-29T12:44:08.320359",
     "hourly": {
       "00:06": {
         "hirings": 769,
         "reviews": 357
+      },
+      "12:44": {
+        "hirings": 772,
+        "reviews": 362
       }
     }
   }
