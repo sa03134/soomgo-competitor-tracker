@@ -6634,13 +6634,17 @@
     "hirings": 591,
     "reviews": 903,
     "rating": 5.0,
-    "timestamp": "2026-06-17T14:56:57.182387",
+    "timestamp": "2026-06-17T22:42:22.098135",
     "hourly": {
       "06:03": {
         "hirings": 588,
         "reviews": 902
       },
       "14:56": {
+        "hirings": 591,
+        "reviews": 903
+      },
+      "22:42": {
         "hirings": 591,
         "reviews": 903
       }
