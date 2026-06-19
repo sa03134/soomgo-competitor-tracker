@@ -6897,13 +6897,17 @@
     "hirings": 825,
     "reviews": 383,
     "rating": 5.0,
-    "timestamp": "2026-06-19T13:29:38.969466",
+    "timestamp": "2026-06-19T18:29:07.786862",
     "hourly": {
       "03:36": {
         "hirings": 821,
         "reviews": 382
       },
       "13:29": {
+        "hirings": 825,
+        "reviews": 383
+      },
+      "18:29": {
         "hirings": 825,
         "reviews": 383
       }
