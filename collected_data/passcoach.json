@@ -7069,13 +7069,17 @@
     "hirings": 50,
     "reviews": 402,
     "rating": 5.0,
-    "timestamp": "2026-07-01T19:43:02.620743",
+    "timestamp": "2026-07-01T23:06:15.974318",
     "hourly": {
       "09:33": {
         "hirings": 50,
         "reviews": 402
       },
       "19:43": {
+        "hirings": 50,
+        "reviews": 402
+      },
+      "23:06": {
         "hirings": 50,
         "reviews": 402
       }
